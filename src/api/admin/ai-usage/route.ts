@@ -7,6 +7,7 @@ import {
   AI_USAGE_MODULE,
   formatAiUsageLog,
   isAiUsageStorageMissing,
+  parseNonNegativeNumber,
   parsePositiveInt,
   previewJson,
   sanitizeText,
@@ -89,6 +90,39 @@ export const GET = async (
         created_at: "DESC",
       },
     })
+    const summaryRows = await aiUsageService.listAiUsageLogs(filters, {
+      take: 5000,
+      order: {
+        created_at: "DESC",
+      },
+    })
+    const summary = summaryRows.reduce(
+      (acc: any, item: any) => ({
+        sessions: acc.sessions + 1,
+        prompt_tokens:
+          acc.prompt_tokens +
+          Math.floor(parseNonNegativeNumber(item.prompt_tokens)),
+        completion_tokens:
+          acc.completion_tokens +
+          Math.floor(parseNonNegativeNumber(item.completion_tokens)),
+        total_tokens:
+          acc.total_tokens +
+          Math.floor(parseNonNegativeNumber(item.total_tokens)),
+        estimated_cost_usd: Number(
+          (
+            acc.estimated_cost_usd +
+            parseNonNegativeNumber(item.estimated_cost_usd)
+          ).toFixed(6)
+        ),
+      }),
+      {
+        sessions: 0,
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0,
+        estimated_cost_usd: 0,
+      }
+    )
 
     return res.json({
       usage: usage.map((item: any) => ({
@@ -96,6 +130,10 @@ export const GET = async (
         input_preview: previewJson(item.input_json),
         response_preview: previewJson(item.response_json),
       })),
+      summary: {
+        ...summary,
+        sampled: count > summaryRows.length,
+      },
       count,
       limit,
       offset,

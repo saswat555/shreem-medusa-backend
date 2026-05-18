@@ -12,6 +12,7 @@ import {
   ensureRecord,
   formatAiUsageLog,
   isAiUsageStorageMissing,
+  parseNonNegativeNumber,
   parsePositiveInt,
   parseTags,
   sanitizeText,
@@ -79,6 +80,14 @@ export const POST = async (
       response_json: response,
       metadata_json: metadata,
       model: sanitizeText(body.model, 120) || null,
+      prompt_tokens: Math.floor(parseNonNegativeNumber(body.prompt_tokens)),
+      completion_tokens: Math.floor(
+        parseNonNegativeNumber(body.completion_tokens)
+      ),
+      total_tokens: Math.floor(parseNonNegativeNumber(body.total_tokens)),
+      estimated_cost_usd: Number(
+        parseNonNegativeNumber(body.estimated_cost_usd).toFixed(6)
+      ),
       expert_recommended: Boolean(body.expert_recommended),
       admin_status: "new",
       tags: parseTags(body.tags),
@@ -119,12 +128,21 @@ export const GET = async (
 
   const limit = parsePositiveInt(req.query.limit, 12)
   const toolPrefix = sanitizeText(req.query.tool_prefix, 80)
+  const createdFrom = sanitizeText(req.query.created_from, 40)
+  const createdTo = sanitizeText(req.query.created_to, 40)
   const filters: Record<string, unknown> = {
     customer_id: customerId,
   }
 
   if (toolPrefix) {
     filters.tool = { $like: `${toolPrefix}%` }
+  }
+
+  if (createdFrom || createdTo) {
+    filters.created_at = {
+      ...(createdFrom ? { $gte: new Date(createdFrom) } : {}),
+      ...(createdTo ? { $lte: new Date(createdTo) } : {}),
+    }
   }
 
   const aiUsageService = req.scope.resolve(AI_USAGE_MODULE) as any

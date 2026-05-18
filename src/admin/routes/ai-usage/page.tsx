@@ -22,6 +22,10 @@ type AiUsage = {
   response: Record<string, unknown>
   metadata: Record<string, unknown>
   model?: string | null
+  prompt_tokens?: number
+  completion_tokens?: number
+  total_tokens?: number
+  estimated_cost_usd?: number
   expert_recommended: boolean
   admin_status: string
   admin_notes?: string | null
@@ -29,6 +33,15 @@ type AiUsage = {
   input_preview?: string
   response_preview?: string
   created_at?: string
+}
+
+type AiUsageSummary = {
+  sessions: number
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  estimated_cost_usd: number
+  sampled?: boolean
 }
 
 type ViewFilter = {
@@ -57,6 +70,12 @@ const formatDate = (value?: string) =>
 
 const prettyJson = (value: unknown) => JSON.stringify(value || {}, null, 2)
 
+const formatNumber = (value?: number) =>
+  new Intl.NumberFormat("en-IN").format(Math.max(0, Number(value || 0)))
+
+const formatCost = (value?: number) =>
+  `$${Math.max(0, Number(value || 0)).toFixed(6)}`
+
 const statusOptions = ["new", "reviewed", "follow_up", "resolved", "archived"]
 
 const AiUsagePage = () => {
@@ -70,6 +89,13 @@ const AiUsagePage = () => {
   const [status, setStatus] = useState("new")
   const [tags, setTags] = useState("")
   const [setupMessage, setSetupMessage] = useState("")
+  const [summary, setSummary] = useState<AiUsageSummary>({
+    sessions: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    estimated_cost_usd: 0,
+  })
 
   const activeQuery = useMemo(() => views[activeView]?.query || {}, [activeView])
 
@@ -88,6 +114,7 @@ const AiUsagePage = () => {
 
       const res = await sdk.client.fetch<{
         usage?: AiUsage[]
+        summary?: AiUsageSummary
         setup_required?: boolean
         message?: string
       }>("/admin/ai-usage", {
@@ -97,6 +124,15 @@ const AiUsagePage = () => {
 
       setSetupMessage(res.setup_required ? res.message || "" : "")
       setUsage(res.usage || [])
+      setSummary(
+        res.summary || {
+          sessions: 0,
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          estimated_cost_usd: 0,
+        }
+      )
     } finally {
       setLoading(false)
     }
@@ -200,6 +236,30 @@ const AiUsagePage = () => {
         </div>
       </Container>
 
+      <Container>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+          {[
+            ["Sessions", formatNumber(summary.sessions)],
+            ["Prompt tokens", formatNumber(summary.prompt_tokens)],
+            ["Output tokens", formatNumber(summary.completion_tokens)],
+            ["Total tokens", formatNumber(summary.total_tokens)],
+            ["Est. cost", formatCost(summary.estimated_cost_usd)],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-lg border p-4">
+              <Text className="text-ui-fg-subtle text-xs">{label}</Text>
+              <Text weight="plus" className="mt-1">
+                {value}
+              </Text>
+            </div>
+          ))}
+        </div>
+        {summary.sampled && (
+          <Text className="text-ui-fg-muted mt-3 text-xs">
+            Summary includes the most recent 5000 rows for this filter.
+          </Text>
+        )}
+      </Container>
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Container>
           <Heading level="h2">{views[activeView]?.label}</Heading>
@@ -233,7 +293,9 @@ const AiUsagePage = () => {
                     Response: {item.response_preview || "No preview"}
                   </Text>
                   <Text className="text-ui-fg-muted mt-2 text-xs">
-                    {formatDate(item.created_at)} · {item.model || "No model"}
+                    {formatDate(item.created_at)} · {item.model || "No model"} ·{" "}
+                    {formatNumber(item.total_tokens)} tokens ·{" "}
+                    {formatCost(item.estimated_cost_usd)}
                   </Text>
                 </button>
               ))
@@ -253,8 +315,25 @@ const AiUsagePage = () => {
                   {selected.customer_email || selected.customer_id}
                 </Text>
                 <Text className="text-ui-fg-muted text-xs">
-                  {formatDate(selected.created_at)}
+                  {formatDate(selected.created_at)} ·{" "}
+                  {formatNumber(selected.total_tokens)} tokens ·{" "}
+                  {formatCost(selected.estimated_cost_usd)}
                 </Text>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg border p-3">
+                  <Text className="text-ui-fg-subtle text-xs">Prompt tokens</Text>
+                  <Text weight="plus">
+                    {formatNumber(selected.prompt_tokens)}
+                  </Text>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <Text className="text-ui-fg-subtle text-xs">Output tokens</Text>
+                  <Text weight="plus">
+                    {formatNumber(selected.completion_tokens)}
+                  </Text>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3">

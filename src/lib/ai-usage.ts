@@ -11,6 +11,10 @@ export type AiUsagePayload = {
   response?: unknown
   metadata?: unknown
   model?: unknown
+  prompt_tokens?: unknown
+  completion_tokens?: unknown
+  total_tokens?: unknown
+  estimated_cost_usd?: unknown
   expert_recommended?: unknown
   tags?: unknown
 }
@@ -24,6 +28,10 @@ export type AiUsageLogRecord = {
   response_json?: Record<string, unknown>
   metadata_json?: Record<string, unknown>
   model?: string | null
+  prompt_tokens?: number | string | null
+  completion_tokens?: number | string | null
+  total_tokens?: number | string | null
+  estimated_cost_usd?: number | string | null
   expert_recommended?: boolean
   admin_status?: string
   admin_notes?: string | null
@@ -54,6 +62,16 @@ export const parsePositiveInt = (
   }
 
   return Math.min(Math.floor(parsed), max)
+}
+
+export const parseNonNegativeNumber = (value: unknown, fallback = 0) => {
+  const parsed = Number(value)
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback
+  }
+
+  return parsed
 }
 
 export const sanitizeText = (value: unknown, maxLength: number) =>
@@ -153,6 +171,12 @@ export const formatAiUsageLog = (log: AiUsageLogRecord) => ({
   response: log.response_json || {},
   metadata: log.metadata_json || {},
   model: log.model || null,
+  prompt_tokens: Math.floor(parseNonNegativeNumber(log.prompt_tokens)),
+  completion_tokens: Math.floor(parseNonNegativeNumber(log.completion_tokens)),
+  total_tokens: Math.floor(parseNonNegativeNumber(log.total_tokens)),
+  estimated_cost_usd: Number(
+    parseNonNegativeNumber(log.estimated_cost_usd).toFixed(6)
+  ),
   expert_recommended: Boolean(log.expert_recommended),
   admin_status: log.admin_status || "new",
   admin_notes: log.admin_notes || null,
