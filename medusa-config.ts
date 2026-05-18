@@ -1,4 +1,5 @@
 import { loadEnv, defineConfig } from "@medusajs/framework/utils"
+import fs from "node:fs"
 import path from "node:path"
 
 const nodeEnv = process.env.NODE_ENV || "development"
@@ -13,6 +14,54 @@ if (isBuiltServer) {
 loadEnv(nodeEnv, cwd)
 
 const redisUrl = process.env.REDIS_URL
+const projectRoot = isBuiltServer ? path.resolve(cwd, "../..") : cwd
+const configuredUploadDir =
+  process.env.FILE_UPLOAD_DIR || process.env.LOCAL_FILE_UPLOAD_DIR || "static"
+const persistentStaticDir = path.isAbsolute(configuredUploadDir)
+  ? configuredUploadDir
+  : path.resolve(projectRoot, configuredUploadDir)
+const runtimeStaticDir = path.resolve(cwd, "static")
+
+const ensureStaticUploadDir = () => {
+  try {
+    fs.mkdirSync(persistentStaticDir, { recursive: true })
+
+    if (!isBuiltServer) {
+      return
+    }
+
+    if (fs.existsSync(runtimeStaticDir)) {
+      const runtimeStat = fs.lstatSync(runtimeStaticDir)
+
+      if (runtimeStat.isSymbolicLink()) {
+        return
+      }
+
+      const runtimeRealPath = fs.realpathSync(runtimeStaticDir)
+      const persistentRealPath = fs.realpathSync(persistentStaticDir)
+
+      if (runtimeRealPath === persistentRealPath) {
+        return
+      }
+
+      fs.cpSync(runtimeStaticDir, persistentStaticDir, {
+        recursive: true,
+        force: false,
+        errorOnExist: false,
+      })
+      fs.renameSync(
+        runtimeStaticDir,
+        `${runtimeStaticDir}.migrated-${Date.now()}`
+      )
+    }
+
+    fs.symlinkSync(path.relative(cwd, persistentStaticDir), runtimeStaticDir, "dir")
+  } catch (error) {
+    console.warn("Unable to prepare persistent static upload directory", error)
+  }
+}
+
+ensureStaticUploadDir()
 
 const redisModules = redisUrl
   ? [
@@ -93,7 +142,7 @@ module.exports = defineConfig({
             resolve: "@medusajs/medusa/file-local",
             id: "local",
             options: {
-              upload_dir: "static",
+              upload_dir: isBuiltServer ? runtimeStaticDir : persistentStaticDir,
               backend_url: process.env.MEDUSA_BACKEND_URL + "/static",
             },
           },

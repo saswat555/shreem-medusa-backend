@@ -20,6 +20,10 @@ pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 ```
 
+Uploads are kept in `/opt/shreem/backend/static`. At runtime the compiled
+server prepares `/opt/shreem/backend/.medusa/server/static` as a symlink to that
+persistent directory, so old image URLs keep working after rebuilds.
+
 Do not start production with `pm2 start "npm start" --cwd /opt/shreem/backend`.
 That runs from the source root and can fail to find the built admin `index.html`.
 
@@ -44,7 +48,9 @@ After deploy, check:
 
 ```bash
 pm2 logs medusa --lines 80
+ls -la /opt/shreem/backend/.medusa/server/static
 curl -I http://127.0.0.1:9000/app
+find /opt/shreem/backend/static -type f | head -1
 curl -s http://127.0.0.1:9000/store/regions
 ```
 
