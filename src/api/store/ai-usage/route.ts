@@ -11,6 +11,7 @@ import {
   createAiUsageId,
   ensureRecord,
   formatAiUsageLog,
+  isAiUsageStorageMissing,
   parsePositiveInt,
   parseTags,
   sanitizeText,
@@ -88,6 +89,14 @@ export const POST = async (
       usage: formatAiUsageLog(usage),
     })
   } catch (error: any) {
+    if (isAiUsageStorageMissing(error)) {
+      return res.status(202).json({
+        synced: false,
+        message:
+          "AI usage storage is not ready yet. Run backend database migrations.",
+      })
+    }
+
     const message = error?.message || "Unable to save AI usage."
     const status = message.includes("too large") ? 413 : 400
 
@@ -119,14 +128,27 @@ export const GET = async (
   }
 
   const aiUsageService = req.scope.resolve(AI_USAGE_MODULE) as any
-  const usage = await aiUsageService.listAiUsageLogs(filters, {
-    take: limit,
-    order: {
-      created_at: "DESC",
-    },
-  })
+  try {
+    const usage = await aiUsageService.listAiUsageLogs(filters, {
+      take: limit,
+      order: {
+        created_at: "DESC",
+      },
+    })
 
-  return res.json({
-    usage: usage.map(formatAiUsageLog),
-  })
+    return res.json({
+      usage: usage.map(formatAiUsageLog),
+    })
+  } catch (error) {
+    if (isAiUsageStorageMissing(error)) {
+      return res.json({
+        synced: false,
+        message:
+          "AI usage storage is not ready yet. Run backend database migrations.",
+        usage: [],
+      })
+    }
+
+    throw error
+  }
 }

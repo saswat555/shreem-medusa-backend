@@ -128,6 +128,22 @@ export const parseTags = (value: unknown) =>
         .slice(0, 12)
     : []
 
+export const isAiUsageStorageMissing = (error: unknown) => {
+  const code = (error as { code?: string })?.code
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error
+      ? String((error as { message?: unknown }).message || "")
+      : String(error || "")
+
+  return (
+    code === "42P01" ||
+    message.includes('relation "ai_usage_log" does not exist') ||
+    message.includes("ai_usage_log") && message.includes("does not exist")
+  )
+}
+
 export const formatAiUsageLog = (log: AiUsageLogRecord) => ({
   id: log.id,
   customer_id: log.customer_id,

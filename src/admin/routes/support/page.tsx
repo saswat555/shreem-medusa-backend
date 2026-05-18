@@ -30,9 +30,12 @@ const SupportPage = () => {
   const loadTickets = async () => {
     setLoading(true)
     try {
-      const res = await sdk.client.fetch("/admin/support", {
-        method: "GET",
-      })
+      const res = await sdk.client.fetch<{ tickets?: Ticket[] }>(
+        "/admin/support",
+        {
+          method: "GET",
+        }
+      )
       setTickets(res.tickets || [])
     } finally {
       setLoading(false)

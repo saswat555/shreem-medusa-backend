@@ -69,6 +69,7 @@ const AiUsagePage = () => {
   const [notes, setNotes] = useState("")
   const [status, setStatus] = useState("new")
   const [tags, setTags] = useState("")
+  const [setupMessage, setSetupMessage] = useState("")
 
   const activeQuery = useMemo(() => views[activeView]?.query || {}, [activeView])
 
@@ -85,11 +86,16 @@ const AiUsagePage = () => {
         query.customer_email = customerFilter.trim()
       }
 
-      const res = await sdk.client.fetch("/admin/ai-usage", {
+      const res = await sdk.client.fetch<{
+        usage?: AiUsage[]
+        setup_required?: boolean
+        message?: string
+      }>("/admin/ai-usage", {
         method: "GET",
         query,
       })
 
+      setSetupMessage(res.setup_required ? res.message || "" : "")
       setUsage(res.usage || [])
     } finally {
       setLoading(false)
@@ -101,9 +107,12 @@ const AiUsagePage = () => {
   }, [activeView])
 
   const openUsage = async (item: AiUsage) => {
-    const res = await sdk.client.fetch(`/admin/ai-usage/${item.id}`, {
-      method: "GET",
-    })
+    const res = await sdk.client.fetch<{ usage: AiUsage }>(
+      `/admin/ai-usage/${item.id}`,
+      {
+        method: "GET",
+      }
+    )
     const detail = res.usage as AiUsage
 
     setSelected(detail)
@@ -120,20 +129,23 @@ const AiUsagePage = () => {
     setSaving(true)
 
     try {
-      const res = await sdk.client.fetch(`/admin/ai-usage/${selected.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await sdk.client.fetch<{ usage: AiUsage }>(
+        `/admin/ai-usage/${selected.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: {
+            admin_status: status,
+            admin_notes: notes,
+            tags: tags
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean),
+          },
         },
-        body: {
-          admin_status: status,
-          admin_notes: notes,
-          tags: tags
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean),
-        },
-      })
+      )
       const updated = res.usage as AiUsage
 
       setSelected(updated)
@@ -152,6 +164,11 @@ const AiUsagePage = () => {
         <Text className="text-ui-fg-subtle mt-2">
           Review customer AI sessions from Astrology, Grow AI, and Support AI.
         </Text>
+        {setupMessage && (
+          <div className="mt-4 rounded-lg border border-ui-border-warning bg-ui-bg-subtle p-4">
+            <Text className="text-ui-fg-base">{setupMessage}</Text>
+          </div>
+        )}
       </Container>
 
       <Container className="space-y-4">

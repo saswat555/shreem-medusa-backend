@@ -6,6 +6,7 @@ import {
 import {
   AI_USAGE_MODULE,
   formatAiUsageLog,
+  isAiUsageStorageMissing,
   parsePositiveInt,
   previewJson,
   sanitizeText,
@@ -80,22 +81,38 @@ export const GET = async (
   }
 
   const aiUsageService = req.scope.resolve(AI_USAGE_MODULE) as any
-  const [usage, count] = await aiUsageService.listAndCountAiUsageLogs(filters, {
-    take: limit,
-    skip: offset,
-    order: {
-      created_at: "DESC",
-    },
-  })
+  try {
+    const [usage, count] = await aiUsageService.listAndCountAiUsageLogs(filters, {
+      take: limit,
+      skip: offset,
+      order: {
+        created_at: "DESC",
+      },
+    })
 
-  return res.json({
-    usage: usage.map((item: any) => ({
-      ...formatAiUsageLog(item),
-      input_preview: previewJson(item.input_json),
-      response_preview: previewJson(item.response_json),
-    })),
-    count,
-    limit,
-    offset,
-  })
+    return res.json({
+      usage: usage.map((item: any) => ({
+        ...formatAiUsageLog(item),
+        input_preview: previewJson(item.input_json),
+        response_preview: previewJson(item.response_json),
+      })),
+      count,
+      limit,
+      offset,
+    })
+  } catch (error) {
+    if (isAiUsageStorageMissing(error)) {
+      return res.json({
+        usage: [],
+        count: 0,
+        limit,
+        offset,
+        setup_required: true,
+        message:
+          "AI usage table is missing. Run NODE_ENV=production npm run db:migrate on the backend server.",
+      })
+    }
+
+    throw error
+  }
 }

@@ -6,6 +6,7 @@ import {
 import {
   AI_USAGE_MODULE,
   formatAiUsageLog,
+  isAiUsageStorageMissing,
   parseTags,
   sanitizeText,
 } from "../../../../lib/ai-usage"
@@ -33,11 +34,22 @@ export const GET = async (
   }
 
   const aiUsageService = req.scope.resolve(AI_USAGE_MODULE) as any
-  const usage = await aiUsageService.retrieveAiUsageLog(req.params.id)
+  try {
+    const usage = await aiUsageService.retrieveAiUsageLog(req.params.id)
 
-  return res.json({
-    usage: formatAiUsageLog(usage),
-  })
+    return res.json({
+      usage: formatAiUsageLog(usage),
+    })
+  } catch (error) {
+    if (isAiUsageStorageMissing(error)) {
+      return res.status(503).json({
+        message:
+          "AI usage table is missing. Run backend database migrations.",
+      })
+    }
+
+    throw error
+  }
 }
 
 export const PATCH = async (
@@ -80,9 +92,20 @@ export const PATCH = async (
   }
 
   const aiUsageService = req.scope.resolve(AI_USAGE_MODULE) as any
-  const usage = await aiUsageService.updateAiUsageLogs(req.params.id, update)
+  try {
+    const usage = await aiUsageService.updateAiUsageLogs(req.params.id, update)
 
-  return res.json({
-    usage: formatAiUsageLog(usage),
-  })
+    return res.json({
+      usage: formatAiUsageLog(usage),
+    })
+  } catch (error) {
+    if (isAiUsageStorageMissing(error)) {
+      return res.status(503).json({
+        message:
+          "AI usage table is missing. Run backend database migrations.",
+      })
+    }
+
+    throw error
+  }
 }

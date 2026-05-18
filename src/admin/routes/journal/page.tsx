@@ -36,9 +36,12 @@ const JournalPage = () => {
   const loadPosts = async () => {
     setLoading(true)
     try {
-      const res = await sdk.client.fetch("/admin/journal", {
-        method: "GET",
-      })
+      const res = await sdk.client.fetch<{ posts?: JournalPost[] }>(
+        "/admin/journal",
+        {
+          method: "GET",
+        }
+      )
       setPosts(res.posts || [])
     } finally {
       setLoading(false)

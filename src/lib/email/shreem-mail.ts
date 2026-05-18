@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs"
+import { basename, extname, join, resolve } from "node:path"
 import tls from "node:tls"
 
 type SendEmailInput = {
@@ -20,7 +22,15 @@ type MailConfig = {
   siteUrl: string
 }
 
+type InlineAttachment = {
+  contentId: string
+  contentType: string
+  filename: string
+  contentBase64: string
+}
+
 const DEFAULT_FROM = "brajsavitrikrishisansthan@gmail.com"
+const LOGO_SRC_TOKEN = "__SHREEM_LOGO_SRC__"
 
 const normalizeLineEndings = (value: string) =>
   value.replace(/\r?\n/g, "\r\n").replace(/^\./gm, "..")
@@ -57,6 +67,58 @@ const getMailConfig = (): MailConfig => {
       process.env.SHREEM_SITE_URL ||
       process.env.MEDUSA_BACKEND_URL ||
       "https://shreemfarms.in",
+  }
+}
+
+const inferImageContentType = (filePath: string) => {
+  const extension = extname(filePath).toLowerCase()
+
+  if (extension === ".png") {
+    return "image/png"
+  }
+
+  if (extension === ".webp") {
+    return "image/webp"
+  }
+
+  return "image/jpeg"
+}
+
+const splitBase64Lines = (value: string) =>
+  value.match(/.{1,76}/g)?.join("\r\n") || value
+
+const findLogoPath = () => {
+  const configuredPath = process.env.SHREEM_LOGO_PATH
+
+  const candidates = [
+    configuredPath ? resolve(configuredPath) : "",
+    join(process.cwd(), "static", "logo.jpeg"),
+    join(process.cwd(), "static", "logo.jpg"),
+    join(process.cwd(), "static", "logo.png"),
+    join(process.cwd(), "public", "logo.jpeg"),
+    resolve(process.cwd(), "..", "frontend", "public", "logo.jpeg"),
+    "/opt/shreem/frontend/public/logo.jpeg",
+  ].filter(Boolean)
+
+  return candidates.find((candidate) => existsSync(candidate)) || null
+}
+
+const getLogoAttachment = (): InlineAttachment | null => {
+  const logoPath = findLogoPath()
+
+  if (!logoPath) {
+    return null
+  }
+
+  try {
+    return {
+      contentId: "shreem-logo",
+      contentType: inferImageContentType(logoPath),
+      filename: basename(logoPath),
+      contentBase64: splitBase64Lines(readFileSync(logoPath).toString("base64")),
+    }
+  } catch {
+    return null
   }
 }
 
@@ -114,8 +176,50 @@ const createMessage = (
   const boundary = `shreem-${Date.now()}-${Math.random()
     .toString(16)
     .slice(2)}`
+  const alternativeBoundary = `${boundary}-alt`
+  const logoAttachment = getLogoAttachment()
+  const htmlWithLogo = html.replaceAll(
+    LOGO_SRC_TOKEN,
+    logoAttachment ? `cid:${logoAttachment.contentId}` : getLogoUrl()
+  )
   const from = `${encodeHeader(config.fromName)} <${config.from}>`
   const safeReplyTo = replyTo || config.replyTo
+
+  if (logoAttachment) {
+    return normalizeLineEndings(`From: ${from}
+To: ${to}
+Reply-To: ${safeReplyTo}
+Subject: ${encodeHeader(subject)}
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="${boundary}"
+
+--${boundary}
+Content-Type: multipart/alternative; boundary="${alternativeBoundary}"
+
+--${alternativeBoundary}
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+${text}
+
+--${alternativeBoundary}
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+${htmlWithLogo}
+
+--${alternativeBoundary}--
+
+--${boundary}
+Content-Type: ${logoAttachment.contentType}; name="${logoAttachment.filename}"
+Content-Transfer-Encoding: base64
+Content-ID: <${logoAttachment.contentId}>
+Content-Disposition: inline; filename="${logoAttachment.filename}"
+
+${logoAttachment.contentBase64}
+
+--${boundary}--`)
+  }
 
   return normalizeLineEndings(`From: ${from}
 To: ${to}
@@ -134,7 +238,7 @@ ${text}
 Content-Type: text/html; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
 
-${html}
+${htmlWithLogo}
 
 --${boundary}--`)
 }
@@ -204,14 +308,13 @@ const baseEmail = ({
   actionLabel: string
   note: string
 }) => {
-  const logoUrl = getLogoUrl()
   const text = `${title}\n\n${intro}\n\n${actionLabel}: ${actionUrl}\n\n${note}\n\nShreem Farms`
   const html = `
     <div style="margin:0;background:#f5efdf;padding:32px 14px;font-family:Arial,Helvetica,sans-serif;color:#092636">
       <div style="max-width:640px;margin:0 auto;background:#fffdf7;border:1px solid #ead7a7;border-radius:28px;overflow:hidden;box-shadow:0 24px 70px rgba(9,38,54,.12)">
         <div style="padding:30px;background:linear-gradient(135deg,#083848 0%,#0d817e 62%,#5a341b 100%);color:#fff">
           <div style="display:flex;align-items:center;gap:14px">
-            <img src="${logoUrl}" alt="Shreem Farms" width="64" height="64" style="display:block;width:64px;height:64px;object-fit:contain;border-radius:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:6px" />
+            <img src="${LOGO_SRC_TOKEN}" alt="Shreem Farms" width="64" height="64" style="display:block;width:64px;height:64px;object-fit:contain;border-radius:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:6px" />
             <div>
               <p style="margin:0 0 7px;letter-spacing:.24em;text-transform:uppercase;color:#f6d36b;font-size:11px;font-weight:700">Shreem Farms</p>
               <p style="margin:0;color:rgba(255,255,255,.74);font-size:13px;line-height:1.5">Desi-cow products, ritual living, and guided care</p>
