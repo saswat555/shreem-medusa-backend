@@ -1,5 +1,6 @@
 import {
   AbstractPaymentProvider,
+  BigNumber,
   PaymentSessionStatus,
 } from "@medusajs/framework/utils"
 
@@ -10,6 +11,10 @@ type PhonePeOptions = {
 
 class PhonePeProviderService extends AbstractPaymentProvider<PhonePeOptions> {
   static identifier = "phonepe"
+
+  constructor(container: Record<string, unknown>, options: PhonePeOptions) {
+    super(container, options)
+  }
 
   async initiatePayment(input: any) {
 
@@ -51,7 +56,7 @@ class PhonePeProviderService extends AbstractPaymentProvider<PhonePeOptions> {
   async refundPayment(input: any) {
 
     return {
-      status: PaymentSessionStatus.REFUNDED,
+      status: PaymentSessionStatus.CANCELED,
       data: input.data
     }
   }
@@ -78,6 +83,16 @@ class PhonePeProviderService extends AbstractPaymentProvider<PhonePeOptions> {
     return {
       status: PaymentSessionStatus.AUTHORIZED,
       data: input.data
+    }
+  }
+
+  async getWebhookActionAndData() {
+    return {
+      action: "not_supported" as const,
+      data: {
+        session_id: "",
+        amount: new BigNumber(0),
+      },
     }
   }
 }

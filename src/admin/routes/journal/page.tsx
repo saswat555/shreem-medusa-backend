@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react"
 import { defineRouteConfig } from "@medusajs/admin-sdk"
-import { Container, Heading, Button, Input, Label, Textarea, Text } from "@medusajs/ui"
+import {
+  Button,
+  Container,
+  Heading,
+  Input,
+  Label,
+  Text,
+  Textarea,
+} from "@medusajs/ui"
 import { sdk } from "../../lib/sdk"
 
 type JournalPost = {
@@ -17,6 +25,7 @@ const JournalPage = () => {
   const [posts, setPosts] = useState<JournalPost[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState("")
 
   const [title, setTitle] = useState("")
   const [slug, setSlug] = useState("")
@@ -43,6 +52,7 @@ const JournalPage = () => {
   const createPost = async () => {
     if (!title || !slug) return
     setSaving(true)
+    setMessage("")
     try {
       await sdk.client.fetch("/admin/journal", {
         method: "POST",
@@ -68,6 +78,9 @@ const JournalPage = () => {
       setCategory("general")
 
       await loadPosts()
+      setMessage("Article created and available through the storefront journal API.")
+    } catch (error: any) {
+      setMessage(error?.message || "Unable to create article.")
     } finally {
       setSaving(false)
     }
@@ -115,6 +128,11 @@ const JournalPage = () => {
             <Button isLoading={saving} onClick={createPost}>
               Create Article
             </Button>
+            {message && (
+              <Text className="mt-3 text-ui-fg-subtle">
+                {message}
+              </Text>
+            )}
           </div>
         </div>
       </Container>

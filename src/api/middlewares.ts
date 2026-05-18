@@ -1,0 +1,26 @@
+import { authenticate, defineMiddlewares } from "@medusajs/framework/http"
+
+export default defineMiddlewares({
+  routes: [
+    {
+      matcher: /^\/store\/ai-usage\/?$/,
+      middlewares: [authenticate("customer", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/store\/auth\/email-verification\/(request|status)\/?$/,
+      middlewares: [authenticate("customer", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/ai-usage(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/mail(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/journal(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+  ],
+})
