@@ -8,10 +8,20 @@ Use this flow on the VM:
 cd /opt/shreem/backend
 git pull origin main
 npm install
-npm run build
+NODE_ENV=production npm run db:migrate
+rm -rf .medusa/server .medusa/admin .cache
+NODE_ENV=production npm run build
+test -f .medusa/server/public/admin/index.html
+cp .env.production .medusa/server/.env.production 2>/dev/null || cp .env .medusa/server/.env.production
+cd .medusa/server
+npm install --omit=dev
+cd /opt/shreem/backend
 pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 ```
+
+Do not start production with `pm2 start "npm start" --cwd /opt/shreem/backend`.
+That runs from the source root and can fail to find the built admin `index.html`.
 
 If a PM2 process already exists that was created with `npm run dev`, replace it:
 
@@ -21,7 +31,7 @@ pm2 start ecosystem.config.cjs --update-env
 pm2 save
 ```
 
-The backend production command is:
+The backend production command is run from `/opt/shreem/backend/.medusa/server`:
 
 ```bash
 NODE_ENV=production npm run start
@@ -37,3 +47,7 @@ pm2 logs medusa --lines 80
 curl -I http://127.0.0.1:9000/app
 curl -s http://127.0.0.1:9000/store/regions
 ```
+
+Set `REDIS_URL=redis://127.0.0.1:6379` in production env and keep Redis running
+to avoid the Express session `MemoryStore` warning and use Redis-backed cache,
+event bus, workflow, lock, and session stores.

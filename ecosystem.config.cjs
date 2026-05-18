@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "medusa",
-      cwd: "/opt/shreem/backend",
+      cwd: "/opt/shreem/backend/.medusa/server",
       script: "npm",
       args: "run start",
       env: {

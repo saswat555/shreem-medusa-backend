@@ -1,10 +1,70 @@
 import { loadEnv, defineConfig } from "@medusajs/framework/utils"
+import path from "node:path"
 
-loadEnv(process.env.NODE_ENV || "development", process.cwd())
+const nodeEnv = process.env.NODE_ENV || "development"
+const cwd = process.cwd()
+const isBuiltServer =
+  path.basename(cwd) === "server" && path.basename(path.dirname(cwd)) === ".medusa"
+
+if (isBuiltServer) {
+  loadEnv(nodeEnv, path.resolve(cwd, "../.."))
+}
+
+loadEnv(nodeEnv, cwd)
+
+const redisUrl = process.env.REDIS_URL
+
+const redisModules = redisUrl
+  ? [
+      {
+        resolve: "@medusajs/medusa/workflow-engine-redis",
+        options: {
+          redisUrl,
+        },
+      },
+      {
+        resolve: "@medusajs/medusa/cache-redis",
+        options: {
+          redisUrl,
+        },
+      },
+      {
+        resolve: "@medusajs/medusa/event-bus-redis",
+        options: {
+          redisUrl,
+          workerOptions: {
+            concurrency: 1,
+          },
+        },
+      },
+      {
+        resolve: "@medusajs/medusa/locking",
+        options: {
+          providers: [
+            {
+              id: "locking-redis",
+              resolve: "@medusajs/medusa/locking-redis",
+              is_default: true,
+              options: {
+                redisUrl,
+              },
+            },
+          ],
+        },
+      },
+    ]
+  : []
 
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    redisUrl,
+    redisPrefix: process.env.REDIS_PREFIX || "shreem:",
+    sessionOptions: {
+      name: process.env.SESSION_NAME || "shreem.sid",
+      resave: false,
+      saveUninitialized: false,
+    },
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
@@ -74,5 +134,6 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/ai-usage",
     },
+    ...redisModules,
   ],
 })
