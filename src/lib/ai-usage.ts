@@ -15,6 +15,7 @@ export type AiUsagePayload = {
   completion_tokens?: unknown
   total_tokens?: unknown
   estimated_cost_usd?: unknown
+  estimated_cost_inr?: unknown
   expert_recommended?: unknown
   tags?: unknown
 }
@@ -32,6 +33,7 @@ export type AiUsageLogRecord = {
   completion_tokens?: number | string | null
   total_tokens?: number | string | null
   estimated_cost_usd?: number | string | null
+  estimated_cost_inr?: number | string | null
   expert_recommended?: boolean
   admin_status?: string
   admin_notes?: string | null
@@ -176,6 +178,9 @@ export const formatAiUsageLog = (log: AiUsageLogRecord) => ({
   total_tokens: Math.floor(parseNonNegativeNumber(log.total_tokens)),
   estimated_cost_usd: Number(
     parseNonNegativeNumber(log.estimated_cost_usd).toFixed(6)
+  ),
+  estimated_cost_inr: Number(
+    parseNonNegativeNumber(log.estimated_cost_inr).toFixed(4)
   ),
   expert_recommended: Boolean(log.expert_recommended),
   admin_status: log.admin_status || "new",

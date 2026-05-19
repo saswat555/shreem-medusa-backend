@@ -114,6 +114,12 @@ export const GET = async (
             parseNonNegativeNumber(item.estimated_cost_usd)
           ).toFixed(6)
         ),
+        estimated_cost_inr: Number(
+          (
+            acc.estimated_cost_inr +
+            parseNonNegativeNumber(item.estimated_cost_inr)
+          ).toFixed(4)
+        ),
       }),
       {
         sessions: 0,
@@ -121,6 +127,7 @@ export const GET = async (
         completion_tokens: 0,
         total_tokens: 0,
         estimated_cost_usd: 0,
+        estimated_cost_inr: 0,
       }
     )
 

@@ -88,6 +88,9 @@ export const POST = async (
       estimated_cost_usd: Number(
         parseNonNegativeNumber(body.estimated_cost_usd).toFixed(6)
       ),
+      estimated_cost_inr: Number(
+        parseNonNegativeNumber(body.estimated_cost_inr).toFixed(4)
+      ),
       expert_recommended: Boolean(body.expert_recommended),
       admin_status: "new",
       tags: parseTags(body.tags),

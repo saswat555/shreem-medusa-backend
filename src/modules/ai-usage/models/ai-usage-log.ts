@@ -13,6 +13,7 @@ const AiUsageLog = model.define("ai_usage_log", {
   completion_tokens: model.number().default(0),
   total_tokens: model.number().default(0),
   estimated_cost_usd: model.number().default(0),
+  estimated_cost_inr: model.number().default(0),
   expert_recommended: model.boolean().default(false),
   admin_status: model.text().default("new"),
   admin_notes: model.text().nullable(),

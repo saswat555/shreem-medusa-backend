@@ -26,6 +26,7 @@ type AiUsage = {
   completion_tokens?: number
   total_tokens?: number
   estimated_cost_usd?: number
+  estimated_cost_inr?: number
   expert_recommended: boolean
   admin_status: string
   admin_notes?: string | null
@@ -41,6 +42,7 @@ type AiUsageSummary = {
   completion_tokens: number
   total_tokens: number
   estimated_cost_usd: number
+  estimated_cost_inr: number
   sampled?: boolean
 }
 
@@ -73,8 +75,15 @@ const prettyJson = (value: unknown) => JSON.stringify(value || {}, null, 2)
 const formatNumber = (value?: number) =>
   new Intl.NumberFormat("en-IN").format(Math.max(0, Number(value || 0)))
 
-const formatCost = (value?: number) =>
+const formatUsd = (value?: number) =>
   `$${Math.max(0, Number(value || 0)).toFixed(6)}`
+
+const formatInr = (value?: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 4,
+  }).format(Math.max(0, Number(value || 0)))
 
 const statusOptions = ["new", "reviewed", "follow_up", "resolved", "archived"]
 
@@ -95,6 +104,7 @@ const AiUsagePage = () => {
     completion_tokens: 0,
     total_tokens: 0,
     estimated_cost_usd: 0,
+    estimated_cost_inr: 0,
   })
 
   const activeQuery = useMemo(() => views[activeView]?.query || {}, [activeView])
@@ -131,6 +141,7 @@ const AiUsagePage = () => {
           completion_tokens: 0,
           total_tokens: 0,
           estimated_cost_usd: 0,
+          estimated_cost_inr: 0,
         }
       )
     } finally {
@@ -243,7 +254,7 @@ const AiUsagePage = () => {
             ["Prompt tokens", formatNumber(summary.prompt_tokens)],
             ["Output tokens", formatNumber(summary.completion_tokens)],
             ["Total tokens", formatNumber(summary.total_tokens)],
-            ["Est. cost", formatCost(summary.estimated_cost_usd)],
+            ["Cost INR", formatInr(summary.estimated_cost_inr)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-lg border p-4">
               <Text className="text-ui-fg-subtle text-xs">{label}</Text>
@@ -294,8 +305,10 @@ const AiUsagePage = () => {
                   </Text>
                   <Text className="text-ui-fg-muted mt-2 text-xs">
                     {formatDate(item.created_at)} · {item.model || "No model"} ·{" "}
-                    {formatNumber(item.total_tokens)} tokens ·{" "}
-                    {formatCost(item.estimated_cost_usd)}
+                    Prompt {formatNumber(item.prompt_tokens)} · Output{" "}
+                    {formatNumber(item.completion_tokens)} · Total{" "}
+                    {formatNumber(item.total_tokens)} ·{" "}
+                    {formatInr(item.estimated_cost_inr)}
                   </Text>
                 </button>
               ))
@@ -317,7 +330,7 @@ const AiUsagePage = () => {
                 <Text className="text-ui-fg-muted text-xs">
                   {formatDate(selected.created_at)} ·{" "}
                   {formatNumber(selected.total_tokens)} tokens ·{" "}
-                  {formatCost(selected.estimated_cost_usd)}
+                  {formatInr(selected.estimated_cost_inr)}
                 </Text>
               </div>
 
@@ -332,6 +345,21 @@ const AiUsagePage = () => {
                   <Text className="text-ui-fg-subtle text-xs">Output tokens</Text>
                   <Text weight="plus">
                     {formatNumber(selected.completion_tokens)}
+                  </Text>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <Text className="text-ui-fg-subtle text-xs">Total tokens</Text>
+                  <Text weight="plus">
+                    {formatNumber(selected.total_tokens)}
+                  </Text>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <Text className="text-ui-fg-subtle text-xs">Cost INR</Text>
+                  <Text weight="plus">
+                    {formatInr(selected.estimated_cost_inr)}
+                  </Text>
+                  <Text className="text-ui-fg-muted mt-1 text-xs">
+                    {formatUsd(selected.estimated_cost_usd)}
                   </Text>
                 </div>
               </div>
