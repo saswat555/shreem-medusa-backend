@@ -1,6 +1,31 @@
 import dotenv from "dotenv"
 
-dotenv.config({ override: true })
+dotenv.config({ path: ".env.production", override: false })
+dotenv.config({ override: false })
+
+export class ShiprocketApiError extends Error {
+  status: number
+  data: unknown
+  path: string
+
+  constructor({
+    message,
+    status,
+    data,
+    path,
+  }: {
+    message: string
+    status: number
+    data: unknown
+    path: string
+  }) {
+    super(message)
+    this.name = "ShiprocketApiError"
+    this.status = status
+    this.data = data
+    this.path = path
+  }
+}
 
 type TokenCache = {
   token: string | null
@@ -13,7 +38,7 @@ const cache: TokenCache = {
 }
 
 const required = (key: string): string => {
-  const value = process.env[key]
+  const value = process.env[key]?.trim()
   if (!value) {
     throw new Error(`${key} is missing in .env`)
   }
@@ -21,7 +46,27 @@ const required = (key: string): string => {
 }
 
 const baseUrl = () =>
-  process.env.SHIPROCKET_BASE_URL || "https://apiv2.shiprocket.in/v1/external"
+  (process.env.SHIPROCKET_BASE_URL || "https://apiv2.shiprocket.in/v1/external")
+    .trim()
+    .replace(/\/+$/, "")
+
+const readResponse = async (response: Response) => {
+  const raw = await response.text()
+
+  try {
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return raw
+  }
+}
+
+export const getShiprocketConfigStatus = () => ({
+  base_url: baseUrl(),
+  email_configured: Boolean(process.env.SHIPROCKET_EMAIL?.trim()),
+  password_configured: Boolean(process.env.SHIPROCKET_PASSWORD?.trim()),
+  pickup_postcode: process.env.SHIPROCKET_PICKUP_POSTCODE?.trim() || null,
+  default_weight_kg: process.env.SHIPROCKET_DEFAULT_WEIGHT_KG || "0.5",
+})
 
 export const getShiprocketToken = async (): Promise<string> => {
   const now = Date.now()
@@ -41,21 +86,23 @@ export const getShiprocketToken = async (): Promise<string> => {
     }),
   })
 
-  const raw = await response.text()
+  const data: any = await readResponse(response)
 
   if (!response.ok) {
-    throw new Error(`Shiprocket auth failed: ${response.status} ${raw}`)
+    throw new ShiprocketApiError({
+      message: "Shiprocket auth failed",
+      status: response.status,
+      data,
+      path: "/auth/login",
+    })
   }
 
-  let data: any
-  try {
-    data = JSON.parse(raw)
-  } catch {
-    throw new Error(`Shiprocket auth returned non-JSON: ${raw}`)
+  if (!data || typeof data !== "object") {
+    throw new Error(`Shiprocket auth returned non-JSON: ${String(data)}`)
   }
 
   if (!data.token) {
-    throw new Error(`Shiprocket auth response missing token: ${raw}`)
+    throw new Error(`Shiprocket auth response missing token: ${JSON.stringify(data)}`)
   }
 
   cache.token = data.token
@@ -69,8 +116,9 @@ export const shiprocketFetch = async (
   options: RequestInit = {}
 ) => {
   const token = await getShiprocketToken()
+  const url = `${baseUrl()}${path}`
 
-  const response = await fetch(`${baseUrl()}${path}`, {
+  const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -79,21 +127,22 @@ export const shiprocketFetch = async (
     },
   })
 
-  const raw = await response.text()
-
-  let data: any = raw
-  try {
-    data = raw ? JSON.parse(raw) : null
-  } catch {}
+  const data = await readResponse(response)
 
   if (!response.ok) {
-    throw new Error(
-      `Shiprocket API failed: ${response.status} ${JSON.stringify(data)}`
-    )
+    throw new ShiprocketApiError({
+      message: "Shiprocket API failed",
+      status: response.status,
+      data,
+      path,
+    })
   }
 
   return data
 }
+
+export const isShiprocketApiError = (error: unknown): error is ShiprocketApiError =>
+  error instanceof ShiprocketApiError
 
 export const getCheapestShiprocketRate = (serviceability: any) => {
   const companies =

@@ -27,6 +27,10 @@ export default defineMiddlewares({
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
     {
+      matcher: /^\/admin\/shiprocket(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
       matcher: /^\/admin\/journal(\/.*)?$/,
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
