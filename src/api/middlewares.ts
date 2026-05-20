@@ -7,11 +7,19 @@ export default defineMiddlewares({
       middlewares: [authenticate("customer", ["session", "bearer"])],
     },
     {
+      matcher: /^\/store\/ai-wallet(\/.*)?$/,
+      middlewares: [authenticate("customer", ["session", "bearer"])],
+    },
+    {
       matcher: /^\/store\/auth\/email-verification\/(request|status)\/?$/,
       middlewares: [authenticate("customer", ["session", "bearer"])],
     },
     {
       matcher: /^\/admin\/ai-usage(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/ai-wallet(\/.*)?$/,
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
     {
