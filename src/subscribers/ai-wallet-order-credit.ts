@@ -1,6 +1,4 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
-import { Modules } from "@medusajs/framework/utils"
-
 import {
   AI_WALLET_MODULE,
   createAiCreditLedgerId,
@@ -21,6 +19,7 @@ const toQuantity = (value: unknown) => Math.max(1, parseNonNegativeInt(value, 1)
 const getLineHandle = (line: any) =>
   line?.product?.handle ||
   line?.variant?.product?.handle ||
+  line?.variant?.product_handle ||
   line?.product_handle ||
   line?.metadata?.product_handle ||
   line?.metadata?.ai_credit_pack ||
@@ -29,8 +28,35 @@ const getLineHandle = (line: any) =>
 const getLineMetadataCredits = (line: any) =>
   parseNonNegativeInt(
     line?.metadata?.ai_credits ||
+      line?.metadata?.credits ||
       line?.product?.metadata?.ai_credits ||
-      line?.variant?.metadata?.ai_credits
+      line?.variant?.metadata?.ai_credits ||
+      line?.variant?.product?.metadata?.ai_credits
+  )
+
+const getLineMetadataPlan = (line: any) =>
+  line?.metadata?.ai_plan ||
+  line?.product?.metadata?.ai_plan ||
+  line?.variant?.metadata?.ai_plan ||
+  line?.variant?.product?.metadata?.ai_plan ||
+  ""
+
+const getLineMetadataPlanDays = (line: any) =>
+  parseNonNegativeInt(
+    line?.metadata?.ai_premium_days ||
+      line?.product?.metadata?.ai_premium_days ||
+      line?.variant?.metadata?.ai_premium_days ||
+      line?.variant?.product?.metadata?.ai_premium_days,
+    30
+  )
+
+const getLineMetadataQuestionLimit = (line: any) =>
+  parseNonNegativeInt(
+    line?.metadata?.ai_pro_daily_limit ||
+      line?.product?.metadata?.ai_pro_daily_limit ||
+      line?.variant?.metadata?.ai_pro_daily_limit ||
+      line?.variant?.product?.metadata?.ai_pro_daily_limit,
+    0
   )
 
 export default async function aiWalletOrderCreditHandler({
@@ -59,6 +85,7 @@ export default async function aiWalletOrderCreditHandler({
       "items.product.metadata",
       "items.variant.metadata",
       "items.variant.product.handle",
+      "items.variant.product.metadata",
     ],
     filters: { id: orderId },
   })
@@ -84,21 +111,31 @@ export default async function aiWalletOrderCreditHandler({
       const pack = packs.find((item) => item.product_handle === handle)
       const metadataCredits = getLineMetadataCredits(line)
       const credits = (pack?.credits || metadataCredits) * quantity
+      const metadataPlan = getLineMetadataPlan(line)
+      const metadataPremium =
+        metadataPlan === "premium"
+          ? {
+              plan: "premium",
+              duration_days: getLineMetadataPlanDays(line),
+              pro_question_limit: getLineMetadataQuestionLimit(line),
+            }
+          : null
+      const packPremium =
+        pack?.plan === "premium"
+          ? {
+              plan: "premium",
+              duration_days: pack.duration_days || 30,
+              pro_question_limit: (pack as any).pro_question_limit || 20,
+            }
+          : null
 
-      if (!credits) {
+      if (!credits && !packPremium && !metadataPremium) {
         return acc
       }
 
       return {
         credits: acc.credits + credits,
-        premium:
-          acc.premium ||
-          (pack?.plan === "premium"
-            ? {
-                plan: "premium",
-                duration_days: pack.duration_days || 30,
-              }
-            : null),
+        premium: acc.premium || packPremium || metadataPremium,
         handles: [...acc.handles, handle || "metadata"],
       }
     },
@@ -133,7 +170,11 @@ export default async function aiWalletOrderCreditHandler({
     customer_email: order.email || wallet.customer_email || null,
     credit_balance: nextBalance,
     ...(grant.premium
-      ? { plan: grant.premium.plan, plan_expires_at: planExpiry }
+      ? {
+          plan: grant.premium.plan,
+          plan_expires_at: planExpiry,
+          pro_question_limit: grant.premium.pro_question_limit || 20,
+        }
       : {}),
   })
 

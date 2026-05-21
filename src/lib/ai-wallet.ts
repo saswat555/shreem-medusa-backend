@@ -93,6 +93,10 @@ export const getAiCreditPacks = () => [
       process.env.AI_PREMIUM_MONTHLY_DAYS,
       30
     ),
+    pro_question_limit: parseNonNegativeInt(
+      process.env.AI_PREMIUM_MONTHLY_DAILY_LIMIT,
+      20
+    ),
   },
 ]
 

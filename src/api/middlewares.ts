@@ -34,5 +34,9 @@ export default defineMiddlewares({
       matcher: /^\/admin\/journal(\/.*)?$/,
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
+    {
+      matcher: /^\/admin\/blog(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
   ],
 })
