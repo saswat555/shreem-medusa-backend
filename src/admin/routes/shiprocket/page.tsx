@@ -39,8 +39,12 @@ const ShiprocketPage = () => {
   }
 
   const getShiprocketHint = (data: any) => {
-    if (data?.shiprocket_status === 403) {
-      return "Shiprocket rejected the credentials. Use a Shiprocket API user from Settings > API, not the regular dashboard login password. Reset the API password, update SHIPROCKET_EMAIL and SHIPROCKET_PASSWORD, then restart Medusa."
+    if (data?.shiprocket_status === 401 || data?.shiprocket_status === 403) {
+      if (data?.config?.auth_mode === "token") {
+        return "Shiprocket rejected the configured bearer token. Generate or copy a fresh Shiprocket token, set SHIPROCKET_TOKEN, then restart Medusa with updated env."
+      }
+
+      return "Shiprocket email/password login failed. Your direct curl proves bearer auth works, so set SHIPROCKET_TOKEN to that working token or use the Shiprocket API-user credentials from Settings > API."
     }
 
     if (data?.shiprocket_status === 422 || data?.http_status === 422) {
@@ -52,7 +56,11 @@ const ShiprocketPage = () => {
     }
 
     if (data?.ok === true) {
-      return "Connection is working."
+      if (data?.auth_mode === "token") {
+        return "Connection is working using the configured Shiprocket bearer token."
+      }
+
+      return "Connection is working using Shiprocket email/password login."
     }
 
     return ""

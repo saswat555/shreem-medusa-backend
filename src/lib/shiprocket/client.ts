@@ -30,12 +30,22 @@ export class ShiprocketApiError extends Error {
 type TokenCache = {
   token: string | null
   expiresAt: number
+  source: "env" | "login" | null
 }
 
 const cache: TokenCache = {
   token: null,
   expiresAt: 0,
+  source: null,
 }
+
+const ENV_TOKEN_KEYS = [
+  "SHIPROCKET_TOKEN",
+  "SHIPROCKET_AUTH_TOKEN",
+  "SHIPROCKET_BEARER_TOKEN",
+  "SHIPROCKET_API_TOKEN",
+  "TOKEN",
+]
 
 const required = (key: string): string => {
   const value = process.env[key]?.trim()
@@ -50,6 +60,20 @@ const baseUrl = () =>
     .trim()
     .replace(/\/+$/, "")
 
+const envToken = () => {
+  for (const key of ENV_TOKEN_KEYS) {
+    const value = process.env[key]?.trim()
+    if (value) {
+      return {
+        key,
+        token: value.replace(/^Bearer\s+/i, ""),
+      }
+    }
+  }
+
+  return null
+}
+
 const readResponse = async (response: Response) => {
   const raw = await response.text()
 
@@ -62,19 +86,16 @@ const readResponse = async (response: Response) => {
 
 export const getShiprocketConfigStatus = () => ({
   base_url: baseUrl(),
+  token_configured: Boolean(envToken()),
+  token_env_key: envToken()?.key || null,
   email_configured: Boolean(process.env.SHIPROCKET_EMAIL?.trim()),
   password_configured: Boolean(process.env.SHIPROCKET_PASSWORD?.trim()),
   pickup_postcode: process.env.SHIPROCKET_PICKUP_POSTCODE?.trim() || null,
   default_weight_kg: process.env.SHIPROCKET_DEFAULT_WEIGHT_KG || "0.5",
+  auth_mode: envToken() ? "token" : "email_password",
 })
 
-export const getShiprocketToken = async (): Promise<string> => {
-  const now = Date.now()
-
-  if (cache.token && cache.expiresAt > now + 60_000) {
-    return cache.token
-  }
-
+const loginWithEmailPassword = async () => {
   const response = await fetch(`${baseUrl()}/auth/login`, {
     method: "POST",
     headers: {
@@ -105,10 +126,61 @@ export const getShiprocketToken = async (): Promise<string> => {
     throw new Error(`Shiprocket auth response missing token: ${JSON.stringify(data)}`)
   }
 
-  cache.token = data.token
+  return data.token as string
+}
+
+export const getShiprocketToken = async (): Promise<string> => {
+  const now = Date.now()
+  const staticToken = envToken()
+
+  if (staticToken) {
+    cache.token = staticToken.token
+    cache.source = "env"
+    cache.expiresAt = Number.MAX_SAFE_INTEGER
+
+    return staticToken.token
+  }
+
+  if (cache.token && cache.expiresAt > now + 60_000) {
+    return cache.token
+  }
+
+  const token = await loginWithEmailPassword()
+
+  cache.token = token
+  cache.source = "login"
   cache.expiresAt = now + 8 * 60 * 60 * 1000
 
-  return data.token
+  return token
+}
+
+export const getShiprocketAuthMode = () => (envToken() ? "token" : "email_password")
+
+const getLoginFallbackToken = async () => {
+  if (!process.env.SHIPROCKET_EMAIL?.trim() || !process.env.SHIPROCKET_PASSWORD?.trim()) {
+    return null
+  }
+
+  const currentToken = cache.token
+  const currentSource = cache.source
+  const currentExpiry = cache.expiresAt
+
+  try {
+    cache.token = null
+    cache.source = null
+    cache.expiresAt = 0
+    const token = await loginWithEmailPassword()
+    cache.token = token
+    cache.source = "login"
+    cache.expiresAt = Date.now() + 8 * 60 * 60 * 1000
+
+    return token
+  } catch {
+    cache.token = currentToken
+    cache.source = currentSource
+    cache.expiresAt = currentExpiry
+    return null
+  }
 }
 
 export const shiprocketFetch = async (
@@ -118,14 +190,25 @@ export const shiprocketFetch = async (
   const token = await getShiprocketToken()
   const url = `${baseUrl()}${path}`
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  })
+  const request = async (bearerToken: string) =>
+    fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${bearerToken}`,
+        ...(options.headers || {}),
+      },
+    })
+
+  let response = await request(token)
+
+  if ((response.status === 401 || response.status === 403) && cache.source === "env") {
+    const fallbackToken = await getLoginFallbackToken()
+
+    if (fallbackToken) {
+      response = await request(fallbackToken)
+    }
+  }
 
   const data = await readResponse(response)
 
@@ -139,6 +222,35 @@ export const shiprocketFetch = async (
   }
 
   return data
+}
+
+export const testShiprocketConnection = async () => {
+  const pickupPostcode = process.env.SHIPROCKET_PICKUP_POSTCODE?.trim() || "486001"
+  const deliveryPostcode =
+    process.env.SHIPROCKET_TEST_DELIVERY_POSTCODE?.trim() || "110001"
+  const weight = process.env.SHIPROCKET_DEFAULT_WEIGHT_KG?.trim() || "0.5"
+  const params = new URLSearchParams({
+    pickup_postcode: pickupPostcode,
+    delivery_postcode: deliveryPostcode,
+    weight,
+    cod: "0",
+  })
+  const token = await getShiprocketToken()
+  const data = await shiprocketFetch(`/courier/serviceability/?${params.toString()}`, {
+    method: "GET",
+  })
+
+  return {
+    token,
+    auth_mode: getShiprocketAuthMode(),
+    test: {
+      pickup_postcode: pickupPostcode,
+      delivery_postcode: deliveryPostcode,
+      weight,
+      cod: 0,
+    },
+    data,
+  }
 }
 
 export const isShiprocketApiError = (error: unknown): error is ShiprocketApiError =>
