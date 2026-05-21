@@ -29,12 +29,24 @@ const ShiprocketPage = () => {
     })
 
     const text = await res.text()
+    const contentType = res.headers.get("content-type") || ""
 
     try {
       const data = JSON.parse(text)
       return { http_status: res.status, ...data }
     } catch {
-      return { status: res.status, raw: text }
+      const looksLikeHtml =
+        contentType.includes("text/html") || /^\s*</.test(text)
+
+      return {
+        http_status: res.status,
+        ok: false,
+        route_missing: looksLikeHtml,
+        error: looksLikeHtml
+          ? "Medusa returned HTML instead of JSON. The Shiprocket admin route is not available in the running backend build, or the admin is pointed at the wrong backend."
+          : "Medusa returned a non-JSON response from the Shiprocket route.",
+        raw_preview: text.slice(0, 500),
+      }
     }
   }
 
@@ -49,6 +61,10 @@ const ShiprocketPage = () => {
 
     if (data?.shiprocket_status === 422 || data?.http_status === 422) {
       return "Shiprocket rejected the request fields. Check pickup pincode, delivery pincode, weight in kg, COD flag, and whether the pickup address is active in Shiprocket."
+    }
+
+    if (data?.route_missing) {
+      return "This is a backend deployment issue, not a Shiprocket credential issue. Rebuild Medusa, copy the latest env into .medusa/server if you run from the built directory, restart PM2, and test this page again."
     }
 
     if (data?.ok === false && data?.available === false) {
