@@ -29,6 +29,56 @@ const toBooleanFilter = (value: unknown) => {
   return undefined
 }
 
+const emptyCostSummary = () => ({
+  sessions: 0,
+  prompt_tokens: 0,
+  completion_tokens: 0,
+  total_tokens: 0,
+  estimated_cost_usd: 0,
+  estimated_cost_inr: 0,
+})
+
+const addUsageCost = (summary: ReturnType<typeof emptyCostSummary>, item: any) => {
+  summary.sessions += 1
+  summary.prompt_tokens += Math.floor(parseNonNegativeNumber(item.prompt_tokens))
+  summary.completion_tokens += Math.floor(
+    parseNonNegativeNumber(item.completion_tokens)
+  )
+  summary.total_tokens += Math.floor(parseNonNegativeNumber(item.total_tokens))
+  summary.estimated_cost_usd = Number(
+    (
+      summary.estimated_cost_usd +
+      parseNonNegativeNumber(item.estimated_cost_usd)
+    ).toFixed(6)
+  )
+  summary.estimated_cost_inr = Number(
+    (
+      summary.estimated_cost_inr +
+      parseNonNegativeNumber(item.estimated_cost_inr)
+    ).toFixed(4)
+  )
+}
+
+const getBillingBucket = (item: any) => {
+  const metadata = item?.metadata_json || {}
+  const mode = String(
+    metadata.billing_mode ||
+      metadata.access_reason ||
+      metadata.wallet_charge?.billing_mode ||
+      ""
+  ).toLowerCase()
+
+  if (["premium", "credit", "paid"].includes(mode)) {
+    return "paid"
+  }
+
+  if (["free", "daily_free"].includes(mode)) {
+    return "free"
+  }
+
+  return "unclassified"
+}
+
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
@@ -97,37 +147,17 @@ export const GET = async (
       },
     })
     const summary = summaryRows.reduce(
-      (acc: any, item: any) => ({
-        sessions: acc.sessions + 1,
-        prompt_tokens:
-          acc.prompt_tokens +
-          Math.floor(parseNonNegativeNumber(item.prompt_tokens)),
-        completion_tokens:
-          acc.completion_tokens +
-          Math.floor(parseNonNegativeNumber(item.completion_tokens)),
-        total_tokens:
-          acc.total_tokens +
-          Math.floor(parseNonNegativeNumber(item.total_tokens)),
-        estimated_cost_usd: Number(
-          (
-            acc.estimated_cost_usd +
-            parseNonNegativeNumber(item.estimated_cost_usd)
-          ).toFixed(6)
-        ),
-        estimated_cost_inr: Number(
-          (
-            acc.estimated_cost_inr +
-            parseNonNegativeNumber(item.estimated_cost_inr)
-          ).toFixed(4)
-        ),
-      }),
+      (acc: any, item: any) => {
+        addUsageCost(acc, item)
+        addUsageCost(acc[getBillingBucket(item)], item)
+
+        return acc
+      },
       {
-        sessions: 0,
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0,
-        estimated_cost_usd: 0,
-        estimated_cost_inr: 0,
+        ...emptyCostSummary(),
+        free: emptyCostSummary(),
+        paid: emptyCostSummary(),
+        unclassified: emptyCostSummary(),
       }
     )
 

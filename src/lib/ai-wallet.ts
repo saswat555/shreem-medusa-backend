@@ -63,27 +63,38 @@ export const sanitizeText = (value: unknown, maxLength: number) =>
 export const getAiCreditPacks = () => [
   {
     id: "credits_10",
-    label: process.env.AI_CREDITS_10_LABEL || "10 AI credits",
+    label: process.env.AI_CREDITS_10_LABEL || "Shreem AI Credits - 10 Readings",
+    description:
+      process.env.AI_CREDITS_10_DESCRIPTION ||
+      "Digital pack of 10 paid AI credits for Kundli, Matchmaking, Prashna Kundli, GrowBuddy, and other Shreem AI tools. Deep Kundli uses 2 credits.",
     credits: parseNonNegativeInt(process.env.AI_CREDITS_10_AMOUNT, 10),
     price_inr: parseNonNegativeInt(process.env.AI_CREDITS_10_PRICE_INR, 199),
     product_handle:
       process.env.AI_CREDITS_10_HANDLE || "shreem-ai-credits-10",
+    digital: true,
   },
   {
     id: "credits_30",
-    label: process.env.AI_CREDITS_30_LABEL || "30 AI credits",
+    label: process.env.AI_CREDITS_30_LABEL || "Shreem AI Credits - 30 Readings",
+    description:
+      process.env.AI_CREDITS_30_DESCRIPTION ||
+      "Digital pack of 30 paid AI credits for Kundli, Matchmaking, Prashna Kundli, GrowBuddy, and other Shreem AI tools. Deep Kundli uses 2 credits.",
     credits: parseNonNegativeInt(process.env.AI_CREDITS_30_AMOUNT, 30),
     price_inr: parseNonNegativeInt(process.env.AI_CREDITS_30_PRICE_INR, 499),
     product_handle:
       process.env.AI_CREDITS_30_HANDLE || "shreem-ai-credits-30",
+    digital: true,
   },
   {
     id: "premium_monthly",
-    label: process.env.AI_PREMIUM_MONTHLY_LABEL || "Premium monthly",
-    credits: parseNonNegativeInt(process.env.AI_PREMIUM_MONTHLY_CREDITS, 120),
+    label: process.env.AI_PREMIUM_MONTHLY_LABEL || "Shreem AI Premium - 30 Days",
+    description:
+      process.env.AI_PREMIUM_MONTHLY_DESCRIPTION ||
+      "Digital 30-day AI membership with 10 AI calls per day for Kundli, Matchmaking, Prashna Kundli, GrowBuddy, and other Shreem AI tools. Deep Kundli uses 2 daily calls.",
+    credits: parseNonNegativeInt(process.env.AI_PREMIUM_MONTHLY_CREDITS, 0),
     price_inr: parseNonNegativeInt(
       process.env.AI_PREMIUM_MONTHLY_PRICE_INR,
-      999
+      499
     ),
     product_handle:
       process.env.AI_PREMIUM_MONTHLY_HANDLE ||
@@ -95,10 +106,14 @@ export const getAiCreditPacks = () => [
     ),
     pro_question_limit: parseNonNegativeInt(
       process.env.AI_PREMIUM_MONTHLY_DAILY_LIMIT,
-      20
+      10
     ),
+    digital: true,
   },
 ]
+
+export const getAiCreditPackByHandle = (handle: string) =>
+  getAiCreditPacks().find((pack) => pack.product_handle === handle)
 
 export const isProActive = (wallet?: AiWalletRecord | null) => {
   if (!wallet || !wallet.plan || wallet.plan === "free") {
@@ -134,6 +149,7 @@ export const formatAiWallet = (
     order_id: item.order_id || null,
     usage_id: item.usage_id || null,
     note: item.note || null,
+    metadata: item.metadata_json || {},
     created_at: item.created_at,
   })),
   created_at: wallet.created_at,

@@ -24,9 +24,13 @@ type AiWallet = {
   recent_ledger?: {
     id: string
     type: string
+    source?: string | null
     credits: number
     balance_after: number
+    order_id?: string | null
+    usage_id?: string | null
     note?: string | null
+    metadata?: Record<string, unknown>
     created_at?: string
   }[]
   updated_at?: string
@@ -36,6 +40,19 @@ type Summary = {
   wallets: number
   total_credits: number
   premium_wallets: number
+}
+
+type AiCreditPack = {
+  id: string
+  label: string
+  description?: string
+  credits: number
+  price_inr: number
+  product_handle: string
+  plan?: string
+  duration_days?: number
+  pro_question_limit?: number
+  digital?: boolean
 }
 
 const formatDate = (value?: string | null) =>
@@ -57,10 +74,12 @@ const AiWalletPage = () => {
     total_credits: 0,
     premium_wallets: 0,
   })
+  const [packs, setPacks] = useState<AiCreditPack[]>([])
   const [customerFilter, setCustomerFilter] = useState("")
   const [creditDelta, setCreditDelta] = useState("")
   const [plan, setPlan] = useState("free")
   const [expiresAt, setExpiresAt] = useState("")
+  const [proQuestionLimit, setProQuestionLimit] = useState("10")
   const [note, setNote] = useState("")
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -81,6 +100,7 @@ const AiWalletPage = () => {
         summary?: Summary
         setup_required?: boolean
         message?: string
+        packs?: AiCreditPack[]
       }>("/admin/ai-wallet", {
         method: "GET",
         query,
@@ -91,6 +111,7 @@ const AiWalletPage = () => {
       setSummary(
         res.summary || { wallets: 0, total_credits: 0, premium_wallets: 0 }
       )
+      setPacks(res.packs || [])
     } finally {
       setLoading(false)
     }
@@ -109,6 +130,7 @@ const AiWalletPage = () => {
 
     setSelected(detail)
     setPlan(detail.plan || "free")
+    setProQuestionLimit(String(detail.pro_question_limit || 10))
     setExpiresAt(
       detail.plan_expires_at
         ? new Date(detail.plan_expires_at).toISOString().slice(0, 10)
@@ -135,6 +157,7 @@ const AiWalletPage = () => {
             add_credits: creditDelta ? Number(creditDelta) : 0,
             plan,
             plan_expires_at: expiresAt || null,
+            pro_question_limit: Number(proQuestionLimit || 0),
             note,
           },
         }
@@ -195,6 +218,38 @@ const AiWalletPage = () => {
               <Text weight="plus" className="mt-1">
                 {value}
               </Text>
+            </div>
+          ))}
+        </div>
+      </Container>
+
+      <Container>
+        <Heading level="h2">AI Products To Sell</Heading>
+        <Text className="text-ui-fg-subtle mt-2 text-sm">
+          These handles are treated as digital AI wallet products by the backend
+          order-credit subscriber.
+        </Text>
+        <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+          {packs.map((pack) => (
+            <div key={pack.id} className="rounded-lg border p-4">
+              <Text weight="plus">{pack.label}</Text>
+              <Text className="text-ui-fg-subtle mt-1 text-xs">
+                Handle: {pack.product_handle}
+              </Text>
+              <Text className="text-ui-fg-subtle mt-1 text-xs">
+                Price ₹{formatNumber(pack.price_inr)} ·{" "}
+                {pack.plan === "premium"
+                  ? `${pack.pro_question_limit || 10}/day for ${
+                      pack.duration_days || 30
+                    } days`
+                  : `${pack.credits} credits`}{" "}
+                · {pack.digital ? "digital" : "physical"}
+              </Text>
+              {pack.description && (
+                <Text className="text-ui-fg-muted mt-2 text-xs">
+                  {pack.description}
+                </Text>
+              )}
             </div>
           ))}
         </div>
@@ -281,6 +336,18 @@ const AiWalletPage = () => {
                   />
                 </div>
                 <div>
+                  <Label>Premium daily AI calls</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={proQuestionLimit}
+                    onChange={(event) =>
+                      setProQuestionLimit(event.target.value)
+                    }
+                    placeholder="10"
+                  />
+                </div>
+                <div>
                   <Label>Admin note</Label>
                   <Input
                     value={note}
@@ -305,6 +372,17 @@ const AiWalletPage = () => {
                       <Text className="text-ui-fg-muted text-xs">
                         Balance {item.balance_after} · {formatDate(item.created_at)}
                       </Text>
+                      <Text className="text-ui-fg-muted mt-1 text-xs">
+                        {item.source ? `Source ${item.source}` : "No source"}
+                        {item.order_id ? ` · Order ${item.order_id}` : ""}
+                        {item.usage_id ? ` · Usage ${item.usage_id}` : ""}
+                      </Text>
+                      {item.metadata &&
+                        Object.keys(item.metadata).length > 0 && (
+                          <Text className="text-ui-fg-muted mt-1 text-xs">
+                            Metadata: {JSON.stringify(item.metadata)}
+                          </Text>
+                        )}
                       {item.note && (
                         <Text className="text-ui-fg-subtle mt-1 text-xs">
                           {item.note}

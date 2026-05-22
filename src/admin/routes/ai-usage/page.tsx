@@ -43,7 +43,19 @@ type AiUsageSummary = {
   total_tokens: number
   estimated_cost_usd: number
   estimated_cost_inr: number
+  free?: AiUsageCostSummary
+  paid?: AiUsageCostSummary
+  unclassified?: AiUsageCostSummary
   sampled?: boolean
+}
+
+type AiUsageCostSummary = {
+  sessions: number
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  estimated_cost_usd: number
+  estimated_cost_inr: number
 }
 
 type ViewFilter = {
@@ -85,6 +97,39 @@ const formatInr = (value?: number) =>
     maximumFractionDigits: 4,
   }).format(Math.max(0, Number(value || 0)))
 
+const emptyUsageSummary = (): AiUsageSummary => ({
+  sessions: 0,
+  prompt_tokens: 0,
+  completion_tokens: 0,
+  total_tokens: 0,
+  estimated_cost_usd: 0,
+  estimated_cost_inr: 0,
+  free: {
+    sessions: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    estimated_cost_usd: 0,
+    estimated_cost_inr: 0,
+  },
+  paid: {
+    sessions: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    estimated_cost_usd: 0,
+    estimated_cost_inr: 0,
+  },
+  unclassified: {
+    sessions: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    estimated_cost_usd: 0,
+    estimated_cost_inr: 0,
+  },
+})
+
 const statusOptions = ["new", "reviewed", "follow_up", "resolved", "archived"]
 
 const AiUsagePage = () => {
@@ -98,14 +143,7 @@ const AiUsagePage = () => {
   const [status, setStatus] = useState("new")
   const [tags, setTags] = useState("")
   const [setupMessage, setSetupMessage] = useState("")
-  const [summary, setSummary] = useState<AiUsageSummary>({
-    sessions: 0,
-    prompt_tokens: 0,
-    completion_tokens: 0,
-    total_tokens: 0,
-    estimated_cost_usd: 0,
-    estimated_cost_inr: 0,
-  })
+  const [summary, setSummary] = useState<AiUsageSummary>(emptyUsageSummary())
 
   const activeQuery = useMemo(() => views[activeView]?.query || {}, [activeView])
 
@@ -134,16 +172,7 @@ const AiUsagePage = () => {
 
       setSetupMessage(res.setup_required ? res.message || "" : "")
       setUsage(res.usage || [])
-      setSummary(
-        res.summary || {
-          sessions: 0,
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-          estimated_cost_usd: 0,
-          estimated_cost_inr: 0,
-        }
-      )
+      setSummary(res.summary || emptyUsageSummary())
     } finally {
       setLoading(false)
     }
@@ -263,6 +292,31 @@ const AiUsagePage = () => {
               </Text>
             </div>
           ))}
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+          {[
+            ["Free-user AI cost", summary.free],
+            ["Paid-user AI cost", summary.paid],
+            ["Unclassified AI cost", summary.unclassified],
+          ].map(([label, value]) => {
+            const bucket = value as AiUsageCostSummary | undefined
+
+            return (
+              <div key={label as string} className="rounded-lg border p-4">
+                <Text className="text-ui-fg-subtle text-xs">
+                  {label as string}
+                </Text>
+                <Text weight="plus" className="mt-1">
+                  {formatInr(bucket?.estimated_cost_inr)}
+                </Text>
+                <Text className="text-ui-fg-muted mt-1 text-xs">
+                  {formatNumber(bucket?.sessions)} sessions ·{" "}
+                  {formatNumber(bucket?.total_tokens)} tokens ·{" "}
+                  {formatUsd(bucket?.estimated_cost_usd)}
+                </Text>
+              </div>
+            )
+          })}
         </div>
         {summary.sampled && (
           <Text className="text-ui-fg-muted mt-3 text-xs">

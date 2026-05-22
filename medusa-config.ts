@@ -188,6 +188,9 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/ai-wallet",
     },
+    {
+      resolve: "./src/modules/expert-call",
+    },
     ...redisModules,
   ],
 })

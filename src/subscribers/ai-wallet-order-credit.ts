@@ -125,7 +125,7 @@ export default async function aiWalletOrderCreditHandler({
           ? {
               plan: "premium",
               duration_days: pack.duration_days || 30,
-              pro_question_limit: (pack as any).pro_question_limit || 20,
+              pro_question_limit: (pack as any).pro_question_limit || 10,
             }
           : null
 
@@ -173,7 +173,7 @@ export default async function aiWalletOrderCreditHandler({
       ? {
           plan: grant.premium.plan,
           plan_expires_at: planExpiry,
-          pro_question_limit: grant.premium.pro_question_limit || 20,
+          pro_question_limit: grant.premium.pro_question_limit || 10,
         }
       : {}),
   })
@@ -195,6 +195,9 @@ export default async function aiWalletOrderCreditHandler({
       handles: grant.handles,
       plan: updatedWallet.plan,
       plan_expires_at: updatedWallet.plan_expires_at,
+      premium_daily_limit: updatedWallet.pro_question_limit || 0,
+      digital_product: true,
+      fulfillment_type: "digital",
     },
   })
 }
