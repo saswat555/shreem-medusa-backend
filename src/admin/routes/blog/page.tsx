@@ -43,6 +43,7 @@ const BlogPage = () => {
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [message, setMessage] = useState("")
 
   const loadPosts = async () => {
@@ -71,6 +72,50 @@ const BlogPage = () => {
   const resetForm = () => {
     setForm(emptyForm)
     setMessage("")
+  }
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result || ""))
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(file)
+    })
+
+  const uploadBlogImage = async (file?: File | null) => {
+    if (!file) return
+
+    setUploadingImage(true)
+    setMessage("")
+
+    try {
+      const contentBase64 = await fileToBase64(file)
+      const res = await sdk.client.fetch<{ url?: string }>("/admin/blog/upload-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          file_name: file.name,
+          mime_type: file.type,
+          content_base64: contentBase64,
+        },
+      })
+
+      if (!res.url) {
+        throw new Error("Upload completed but no image URL was returned.")
+      }
+
+      updateField("image", res.url)
+      if (!form.image_alt) {
+        updateField("image_alt", form.title || "Shreem Blog image")
+      }
+      setMessage("Image uploaded. Save the blog post to publish this image URL.")
+    } catch (error: any) {
+      setMessage(error?.message || "Unable to upload image.")
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   const editPost = (post: BlogPost) => {
@@ -238,12 +283,34 @@ const BlogPage = () => {
             </div>
             <div>
               <Label>Image URL</Label>
-              <Input
-                value={form.image}
-                onChange={(e) => updateField("image", e.target.value)}
-              />
+              <div className="mt-1 flex flex-col gap-2">
+                <Input
+                  value={form.image}
+                  onChange={(e) => updateField("image", e.target.value)}
+                  placeholder="Paste an image URL or upload below"
+                />
+                <Input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  disabled={uploadingImage}
+                  onChange={(e) => uploadBlogImage(e.target.files?.[0])}
+                />
+                <Text className="text-ui-fg-subtle text-xs">
+                  Upload stores the image in backend static storage and fills this URL.
+                </Text>
+              </div>
             </div>
           </div>
+
+          {form.image ? (
+            <div className="overflow-hidden rounded-lg border bg-ui-bg-subtle">
+              <img
+                src={form.image}
+                alt={form.image_alt || "Blog image preview"}
+                className="h-44 w-full object-cover"
+              />
+            </div>
+          ) : null}
 
           <div>
             <Label>Image alt text</Label>
@@ -254,7 +321,7 @@ const BlogPage = () => {
           </div>
 
           <div>
-            <Button isLoading={saving} onClick={savePost}>
+            <Button isLoading={saving || uploadingImage} onClick={savePost}>
               {form.id ? "Save changes" : "Create post"}
             </Button>
             {message && <Text className="mt-3 text-ui-fg-subtle">{message}</Text>}

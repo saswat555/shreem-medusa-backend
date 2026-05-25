@@ -31,6 +31,16 @@ export default defineMiddlewares({
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
     {
+      matcher: /^\/admin\/manual-upi(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/(blog\/upload-image|manual-upi\/qr)\/?$/,
+      bodyParser: {
+        sizeLimit: "12mb",
+      },
+    },
+    {
       matcher: /^\/admin\/journal(\/.*)?$/,
       middlewares: [authenticate("user", ["session", "bearer"])],
     },

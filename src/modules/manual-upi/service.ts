@@ -3,6 +3,8 @@ import {
   BigNumber,
   PaymentSessionStatus,
 } from "@medusajs/framework/utils"
+import fs from "node:fs"
+import path from "node:path"
 
 type ManualUpiOptions = {
   upiId?: string
@@ -27,6 +29,46 @@ const amountToMajor = (amount: unknown) => {
   return (parsed / 100).toFixed(2)
 }
 
+const getProjectRoot = () => {
+  if (process.env.MEDUSA_PROJECT_ROOT) {
+    return process.env.MEDUSA_PROJECT_ROOT
+  }
+
+  const cwd = process.cwd()
+  return cwd.endsWith(path.join(".medusa", "server"))
+    ? path.resolve(cwd, "../..")
+    : cwd
+}
+
+const getUploadedQrImageUrl = () => {
+  const backendUrl = String(
+    process.env.MEDUSA_BACKEND_URL || process.env.BACKEND_URL || ""
+  )
+    .trim()
+    .replace(/\/+$/, "")
+
+  if (!backendUrl) {
+    return ""
+  }
+
+  const configuredUploadDir =
+    process.env.FILE_UPLOAD_DIR || process.env.LOCAL_FILE_UPLOAD_DIR || "static"
+  const staticRoot = path.isAbsolute(configuredUploadDir)
+    ? configuredUploadDir
+    : path.resolve(getProjectRoot(), configuredUploadDir)
+  const extensions = [".png", ".jpg", ".webp", ".gif"]
+
+  for (const extension of extensions) {
+    const filePath = path.join(staticRoot, "payment", `shreem-upi-qr${extension}`)
+
+    if (fs.existsSync(filePath)) {
+      return `${backendUrl}/static/payment/shreem-upi-qr${extension}`
+    }
+  }
+
+  return ""
+}
+
 class ManualUpiPaymentProviderService extends AbstractPaymentProvider<ManualUpiOptions> {
   static identifier = "manual_upi"
 
@@ -45,11 +87,9 @@ class ManualUpiPaymentProviderService extends AbstractPaymentProvider<ManualUpiO
       "MANUAL_UPI_PAYEE_NAME",
       "Shreem Farms"
     )
-    const qrImageUrl = getOption(
-      this.options_,
-      "qrImageUrl",
-      "MANUAL_UPI_QR_IMAGE_URL"
-    )
+    const qrImageUrl =
+      getUploadedQrImageUrl() ||
+      getOption(this.options_, "qrImageUrl", "MANUAL_UPI_QR_IMAGE_URL")
 
     return {
       upiId,
