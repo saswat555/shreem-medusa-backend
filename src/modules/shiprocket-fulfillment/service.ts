@@ -69,18 +69,111 @@ class ShiprocketFulfillmentProviderService extends AbstractFulfillmentProviderSe
       throw new Error("Shiprocket: delivery pincode is required before calculating shipping.")
     }
 
-    const fallbackWeight = Number(process.env.SHIPROCKET_DEFAULT_WEIGHT_KG || 1)
+    const inputWeight = Number(inputData?.weight_kg || inputData?.weight)
+    const fallbackWeight = Number.isFinite(inputWeight) && inputWeight > 0
+      ? inputWeight
+      : Number(process.env.SHIPROCKET_DEFAULT_WEIGHT_KG || 1)
     const items = Array.isArray(ctx?.items) ? ctx.items : []
+
+    const numberValue = (value: unknown) => {
+      const parsed = Number(value)
+
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+    }
+
+    const medusaWeightToKg = (value: unknown) => {
+      const parsed = numberValue(value)
+
+      if (!parsed) {
+        return 0
+      }
+
+      return parsed > 50 ? parsed / 1000 : parsed
+    }
+
+    const metadataNumber = (metadata: any, keys: string[]) => {
+      for (const key of keys) {
+        const parsed = numberValue(metadata?.[key])
+
+        if (parsed) {
+          return parsed
+        }
+      }
+
+      return 0
+    }
+
+    const getItemWeightKg = (item: any) =>
+      numberValue(item.variant?.metadata?.weight_kg) ||
+      numberValue(item.product?.metadata?.weight_kg) ||
+      medusaWeightToKg(item.variant?.weight) ||
+      medusaWeightToKg(item.product?.weight) ||
+      fallbackWeight
+
+    const getItemDimensions = (item: any) => {
+      const variantMetadata = item.variant?.metadata || {}
+      const productMetadata = item.product?.metadata || {}
+
+      return {
+        length:
+          metadataNumber(variantMetadata, ["length_cm", "package_length_cm"]) ||
+          metadataNumber(productMetadata, ["length_cm", "package_length_cm"]) ||
+          numberValue(item.variant?.length) ||
+          numberValue(item.product?.length),
+        breadth:
+          metadataNumber(variantMetadata, [
+            "breadth_cm",
+            "width_cm",
+            "package_breadth_cm",
+            "package_width_cm",
+          ]) ||
+          metadataNumber(productMetadata, [
+            "breadth_cm",
+            "width_cm",
+            "package_breadth_cm",
+            "package_width_cm",
+          ]) ||
+          numberValue(item.variant?.width) ||
+          numberValue(item.product?.width),
+        height:
+          metadataNumber(variantMetadata, ["height_cm", "package_height_cm"]) ||
+          metadataNumber(productMetadata, ["height_cm", "package_height_cm"]) ||
+          numberValue(item.variant?.height) ||
+          numberValue(item.product?.height),
+      }
+    }
 
     const totalWeight = items.reduce((sum: number, item: any) => {
       const qty = Number(item.quantity || 1)
-      const variantWeight =
-        Number(item.variant?.weight) ||
-        Number(item.variant?.metadata?.weight_kg) ||
-        fallbackWeight
 
-      return sum + variantWeight * qty
+      return sum + getItemWeightKg(item) * qty
     }, 0)
+
+    const itemDimensions = items.reduce(
+      (acc: any, item: any) => {
+        const qty = Math.max(1, Number(item.quantity || 1))
+        const itemDimensions = getItemDimensions(item)
+
+        return {
+          length: Math.max(acc.length, itemDimensions.length),
+          breadth: Math.max(acc.breadth, itemDimensions.breadth),
+          height: acc.height + itemDimensions.height * qty,
+        }
+      },
+      { length: 0, breadth: 0, height: 0 }
+    )
+    const dimensions = {
+      length:
+        numberValue(inputData?.length || inputData?.length_cm) ||
+        itemDimensions.length,
+      breadth:
+        numberValue(
+          inputData?.breadth || inputData?.breadth_cm || inputData?.width_cm
+        ) || itemDimensions.breadth,
+      height:
+        numberValue(inputData?.height || inputData?.height_cm) ||
+        itemDimensions.height,
+    }
 
     const weight = totalWeight > 0 ? totalWeight : fallbackWeight
     const cod = inputData?.cod ? 1 : 0
@@ -91,6 +184,12 @@ class ShiprocketFulfillmentProviderService extends AbstractFulfillmentProviderSe
       weight: String(weight),
       cod: String(cod),
     })
+
+    if (dimensions.length && dimensions.breadth && dimensions.height) {
+      params.set("length", String(dimensions.length))
+      params.set("breadth", String(dimensions.breadth))
+      params.set("height", String(dimensions.height))
+    }
 
     const response = await shiprocketFetch(
       `/courier/serviceability/?${params.toString()}`,

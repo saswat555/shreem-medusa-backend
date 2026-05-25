@@ -106,7 +106,7 @@ const redisModules = redisUrl
     ]
   : []
 
-module.exports = defineConfig({
+export default defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     redisUrl,
@@ -160,6 +160,15 @@ module.exports = defineConfig({
             options: {
               clientId: process.env.PHONEPE_CLIENT_ID,
               clientSecret: process.env.PHONEPE_CLIENT_SECRET,
+            },
+          },
+          {
+            resolve: "./src/modules/manual-upi",
+            id: "manual_upi",
+            options: {
+              upiId: process.env.MANUAL_UPI_ID,
+              payeeName: process.env.MANUAL_UPI_PAYEE_NAME,
+              qrImageUrl: process.env.MANUAL_UPI_QR_IMAGE_URL,
             },
           },
         ],

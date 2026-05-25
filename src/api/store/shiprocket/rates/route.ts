@@ -117,6 +117,12 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       delivery_postcode: deliveryPostcode,
       amount,
       amount_paise: Math.round(amount * 100),
+      package: {
+        weight,
+        length: body.length || body.length_cm || null,
+        breadth: body.breadth || body.breadth_cm || null,
+        height: body.height || body.height_cm || null,
+      },
       courier: cheapest,
       all_options: data?.data?.available_courier_companies || [],
     })
