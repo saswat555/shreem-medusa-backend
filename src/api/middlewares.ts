@@ -35,7 +35,15 @@ export default defineMiddlewares({
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
     {
-      matcher: /^\/admin\/(blog\/upload-image|manual-upi\/qr)\/?$/,
+      matcher: "/admin/blog/upload-image",
+      methods: ["POST"],
+      bodyParser: {
+        sizeLimit: "12mb",
+      },
+    },
+    {
+      matcher: "/admin/manual-upi/qr",
+      methods: ["POST"],
       bodyParser: {
         sizeLimit: "12mb",
       },
