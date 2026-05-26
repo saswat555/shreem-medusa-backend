@@ -62,7 +62,9 @@ const getUploadedQrImageUrl = () => {
     const filePath = path.join(staticRoot, "payment", `shreem-upi-qr${extension}`)
 
     if (fs.existsSync(filePath)) {
-      return `${backendUrl}/static/payment/shreem-upi-qr${extension}`
+      const version = Math.round(fs.statSync(filePath).mtimeMs)
+
+      return `${backendUrl}/static/payment/shreem-upi-qr${extension}?v=${version}`
     }
   }
 

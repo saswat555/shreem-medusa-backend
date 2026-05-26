@@ -128,8 +128,11 @@ export const getManualUpiQrPublicUrl = async () => {
 
   for (const candidate of candidates) {
     try {
-      await fs.access(candidate.filePath)
-      return backendUrl ? `${backendUrl}${candidate.publicPath}` : candidate.publicPath
+      const stat = await fs.stat(candidate.filePath)
+      const version = Math.round(stat.mtimeMs)
+      const publicPath = `${candidate.publicPath}?v=${version}`
+
+      return backendUrl ? `${backendUrl}${publicPath}` : publicPath
     } catch {
       // keep looking for the uploaded QR in another supported format
     }

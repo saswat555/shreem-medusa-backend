@@ -105,7 +105,9 @@ class ShiprocketFulfillmentProviderService extends AbstractFulfillmentProviderSe
 
     const getItemWeightKg = (item: any) =>
       numberValue(item.variant?.metadata?.weight_kg) ||
+      numberValue(item.variant?.metadata?.package_weight_kg) ||
       numberValue(item.product?.metadata?.weight_kg) ||
+      numberValue(item.product?.metadata?.package_weight_kg) ||
       medusaWeightToKg(item.variant?.weight) ||
       medusaWeightToKg(item.product?.weight) ||
       fallbackWeight
