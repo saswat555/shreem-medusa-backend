@@ -25,10 +25,10 @@
   },
   "dependencies": {
     "@codee-sh/medusa-plugin-notification-emails": "^1.0.2",
-    "@medusajs/admin-sdk": "2.13.6",
-    "@medusajs/cli": "2.13.6",
-    "@medusajs/framework": "2.13.6",
-    "@medusajs/medusa": "2.13.6"
+    "@medusajs/admin-sdk": "2.15.3",
+    "@medusajs/cli": "2.15.3",
+    "@medusajs/framework": "2.15.3",
+    "@medusajs/medusa": "2.15.3"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.13.6",
