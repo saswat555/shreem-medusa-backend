@@ -365,3 +365,24 @@ export const buildMailTestEmail = (actionUrl: string) =>
     actionLabel: "Open Shreem Farms",
     note: "If this arrived in your inbox, the production mail credentials are working. Keep the Gmail App Password private and never commit it to Git.",
   })
+
+export const buildOrderStatusEmail = ({
+  title,
+  intro,
+  orderUrl,
+  note,
+  actionLabel = "View order",
+}: {
+  title: string
+  intro: string
+  orderUrl: string
+  note: string
+  actionLabel?: string
+}) =>
+  baseEmail({
+    title,
+    intro,
+    actionUrl: orderUrl,
+    actionLabel,
+    note,
+  })

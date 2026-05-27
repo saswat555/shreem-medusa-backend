@@ -59,6 +59,23 @@ class ShiprocketFulfillmentProviderService extends AbstractFulfillmentProviderSe
     const ctx: any = context || {}
     const inputData: any = data || {}
 
+    const selectedAmountPaise = Number(inputData?.amount_paise)
+    const selectedAmount = Number(inputData?.amount)
+
+    if (Number.isFinite(selectedAmountPaise) && selectedAmountPaise > 0) {
+      return {
+        calculated_amount: Number((selectedAmountPaise / 100).toFixed(2)),
+        is_calculated_price_tax_inclusive: true,
+      }
+    }
+
+    if (Number.isFinite(selectedAmount) && selectedAmount > 0) {
+      return {
+        calculated_amount: Number(selectedAmount.toFixed(2)),
+        is_calculated_price_tax_inclusive: true,
+      }
+    }
+
     const deliveryPostcode =
       ctx?.shipping_address?.postal_code ||
       ctx?.shipping_address?.postal_code?.toString?.() ||

@@ -4,6 +4,10 @@ import {
 } from "@medusajs/framework/http"
 
 import { sendShreemEmail } from "../../../../../../lib/email/shreem-mail"
+import {
+  bookShiprocketForOrder,
+  serializeShiprocketError,
+} from "../../../../../../lib/shiprocket/order-booking"
 
 type NotifyApprovedBody = {
   email?: unknown
@@ -92,16 +96,42 @@ export const POST = async (
     </div>`
 
   try {
+    let emailWarning = ""
+
     await sendShreemEmail({
       to: email,
       subject,
       html,
       text,
+    }).catch((error) => {
+      emailWarning = error?.message || "Payment approval email could not be sent."
+      console.error("Manual UPI payment approval email failed", error)
     })
+
+    let shiprocket: Record<string, unknown> | null = null
+    let shiprocketWarning = ""
+
+    try {
+      const booking = await bookShiprocketForOrder(req.scope, req.params.id, {
+        source: "manual_upi_approval",
+        notifyCustomer: true,
+      })
+      shiprocket = booking.shiprocket || null
+    } catch (error) {
+      const serialized = serializeShiprocketError(error)
+      shiprocketWarning = serialized.message || "Shiprocket booking failed."
+      console.error("Manual UPI Shiprocket booking failed", serialized)
+    }
 
     return res.json({
       ok: true,
-      message: "Payment approval email sent.",
+      message: [
+        emailWarning ? emailWarning : "Payment approval email sent.",
+        shiprocketWarning ? shiprocketWarning : "Shiprocket booking checked.",
+      ].join(" "),
+      shiprocket,
+      email_warning: emailWarning || undefined,
+      shiprocket_warning: shiprocketWarning || undefined,
     })
   } catch (error: any) {
     return res.status(502).json({
