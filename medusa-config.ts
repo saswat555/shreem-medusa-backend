@@ -111,11 +111,6 @@ export default defineConfig({
     databaseUrl: process.env.DATABASE_URL,
     redisUrl,
     redisPrefix: process.env.REDIS_PREFIX || "shreem:",
-    sessionOptions: {
-      name: process.env.SESSION_NAME || "shreem.sid",
-      resave: false,
-      saveUninitialized: false,
-    },
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,

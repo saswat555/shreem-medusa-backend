@@ -28,7 +28,8 @@
     "@medusajs/admin-sdk": "2.13.6",
     "@medusajs/cli": "2.13.6",
     "@medusajs/framework": "2.13.6",
-    "@medusajs/medusa": "2.13.6"
+    "@medusajs/medusa": "2.13.6",
+    "nodemailer": "^8.0.10"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.13.6",
