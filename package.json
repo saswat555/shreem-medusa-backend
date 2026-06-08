@@ -25,9 +25,9 @@
   },
   "dependencies": {
     "@codee-sh/medusa-plugin-notification-emails": "^1.0.2",
-    "@medusajs/admin-sdk": "2.13.6",
-    "@medusajs/auth-google": "2.13.6",
-    "@medusajs/cli": "2.13.6",
+    "@medusajs/admin-sdk": "2.15.5",
+    "@medusajs/auth-google": "2.15.5",
+    "@medusajs/cli": "2.15.5",
     "@medusajs/framework": "^2.13.6",
     "@medusajs/medusa": "^2.13.6",
     "nodemailer": "^8.0.10",
