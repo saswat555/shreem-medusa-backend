@@ -11,21 +11,19 @@ type UploadImageBody = {
   content_base64?: unknown
 }
 
-const isAdminRequest = (req: AuthenticatedMedusaRequest) =>
-  (req as any).auth_context?.actor_type === "user" &&
-  Boolean((req as any).auth_context?.actor_id)
-
 export const POST = async (
   req: AuthenticatedMedusaRequest<UploadImageBody>,
   res: MedusaResponse
 ) => {
-  if (!isAdminRequest(req)) {
-    return res.status(401).json({
-      message: "Admin authentication is required.",
-    })
-  }
-
   try {
+    console.log("[blog-upload-image] request body keys", Object.keys(req.body || {}))
+    console.log("[blog-upload-image] file_name", req.body?.file_name)
+    console.log("[blog-upload-image] mime_type", req.body?.mime_type)
+    console.log(
+      "[blog-upload-image] content_base64 length",
+      typeof req.body?.content_base64 === "string" ? req.body.content_base64.length : 0
+    )
+
     const upload = await saveAdminImageUpload({
       directory: "blog",
       fileName: req.body?.file_name,
@@ -33,12 +31,19 @@ export const POST = async (
       contentBase64: req.body?.content_base64,
     })
 
+    console.log("[blog-upload-image] saved", upload)
+
     return res.status(201).json({
       ok: true,
       upload,
       url: upload.url,
     })
   } catch (error: any) {
+    console.error("[blog-upload-image] failed", {
+      message: error?.message,
+      stack: error?.stack,
+    })
+
     return res.status(400).json({
       ok: false,
       message: error?.message || "Unable to upload blog image.",

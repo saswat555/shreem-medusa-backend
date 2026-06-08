@@ -3,6 +3,20 @@ import { authenticate, defineMiddlewares } from "@medusajs/framework/http"
 export default defineMiddlewares({
   routes: [
     {
+      matcher: "/admin/blog/upload-image",
+      methods: ["POST"],
+      bodyParser: {
+        sizeLimit: "12mb",
+      },
+    },
+    {
+      matcher: "/admin/manual-upi/qr",
+      methods: ["POST"],
+      bodyParser: {
+        sizeLimit: "12mb",
+      },
+    },
+    {
       matcher: /^\/store\/ai-usage\/?$/,
       middlewares: [authenticate("customer", ["session", "bearer"])],
     },
@@ -36,24 +50,14 @@ export default defineMiddlewares({
     },
     {
       matcher: "/admin/blog/upload-image",
-      methods: ["POST"],
-      bodyParser: {
-        sizeLimit: "12mb",
-      },
-    },
-    {
-      matcher: "/admin/manual-upi/qr",
-      methods: ["POST"],
-      bodyParser: {
-        sizeLimit: "12mb",
-      },
-    },
-    {
-      matcher: /^\/admin\/journal(\/.*)?$/,
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
     {
       matcher: /^\/admin\/blog(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/journal(\/.*)?$/,
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
   ],
