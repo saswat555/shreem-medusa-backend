@@ -1,13 +1,5 @@
-import {
-  AuthenticatedMedusaRequest,
-  MedusaResponse,
-} from "@medusajs/framework/http"
-
 import { sendShreemEmail } from "../../../../../../lib/email/shreem-mail"
-import {
-  bookShiprocketForOrder,
-  serializeShiprocketError,
-} from "../../../../../../lib/shiprocket/order-booking"
+import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 
 type NotifyApprovedBody = {
   email?: unknown
@@ -107,32 +99,14 @@ export const POST = async (
       emailWarning = error?.message || "Payment approval email could not be sent."
       console.error("Manual UPI payment approval email failed", error)
     })
-
-    let shiprocket: Record<string, unknown> | null = null
-    let shiprocketWarning = ""
-
-    try {
-      const booking = await bookShiprocketForOrder(req.scope, req.params.id, {
-        source: "manual_upi_approval",
-        notifyCustomer: true,
-      })
-      shiprocket = booking.shiprocket || null
-    } catch (error) {
-      const serialized = serializeShiprocketError(error)
-      shiprocketWarning = serialized.message || "Shiprocket booking failed."
-      console.error("Manual UPI Shiprocket booking failed", serialized)
-    }
-
-    return res.json({
+return res.json({
       ok: true,
       message: [
         emailWarning ? emailWarning : "Payment approval email sent.",
-        shiprocketWarning ? shiprocketWarning : "Shiprocket booking checked.",
+        "Payment approval email sent.",
       ].join(" "),
-      shiprocket,
-      email_warning: emailWarning || undefined,
-      shiprocket_warning: shiprocketWarning || undefined,
-    })
+email_warning: emailWarning || undefined,
+})
   } catch (error: any) {
     return res.status(502).json({
       ok: false,
