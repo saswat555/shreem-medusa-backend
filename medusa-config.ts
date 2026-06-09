@@ -15,6 +15,27 @@ loadEnv(nodeEnv, cwd)
 
 const redisUrl = process.env.REDIS_URL
 const projectRoot = isBuiltServer ? path.resolve(cwd, "../..") : cwd
+
+const readRootEnvValue = (key: string) => {
+  try {
+    const envPath = path.resolve(projectRoot, ".env")
+    const raw = fs.readFileSync(envPath, "utf8")
+    const line = raw
+      .split(/\r?\n/)
+      .find((entry) => entry.trim().startsWith(`${key}=`))
+
+    if (!line) {
+      return process.env[key]
+    }
+
+    return line
+      .slice(line.indexOf("=") + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, "")
+  } catch {
+    return process.env[key]
+  }
+}
 const configuredUploadDir =
   process.env.FILE_UPLOAD_DIR || process.env.LOCAL_FILE_UPLOAD_DIR || "static"
 const persistentStaticDir = path.isAbsolute(configuredUploadDir)
@@ -99,11 +120,11 @@ const redisModules = redisUrl
               options: {
                 redisUrl,
               },
-            },
-          ],
+            }
+],
         },
-      },
-    ]
+      }
+]
   : []
 
 export default defineConfig({
@@ -146,8 +167,8 @@ export default defineConfig({
               clientSecret: process.env.GOOGLE_CLIENT_SECRET,
               callbackUrl: process.env.GOOGLE_CALLBACK_URL,
             },
-          },
-        ],
+          }
+],
       },
     },
 
@@ -162,8 +183,8 @@ export default defineConfig({
               upload_dir: isBuiltServer ? runtimeStaticDir : persistentStaticDir,
               backend_url: process.env.MEDUSA_BACKEND_URL + "/static",
             },
-          },
-        ],
+          }
+],
       },
     },
 
@@ -172,11 +193,11 @@ export default defineConfig({
       options: {
         providers: [
           {
-            resolve: "./src/modules/phonepe",
-            id: "phonepe",
+            resolve: "./src/modules/razorpay",
+            id: "razorpay",
             options: {
-              clientId: process.env.PHONEPE_CLIENT_ID,
-              clientSecret: process.env.PHONEPE_CLIENT_SECRET,
+              key_id: readRootEnvValue("RAZORPAY_KEY_ID"),
+              key_secret: readRootEnvValue("RAZORPAY_KEY_SECRET"),
             },
           },
           {
@@ -187,8 +208,8 @@ export default defineConfig({
               payeeName: process.env.MANUAL_UPI_PAYEE_NAME,
               qrImageUrl: process.env.MANUAL_UPI_QR_IMAGE_URL,
             },
-          },
-        ],
+          }
+],
       },
     },
 
@@ -199,12 +220,8 @@ export default defineConfig({
           {
             resolve: "@medusajs/medusa/fulfillment-manual",
             id: "manual",
-          },
-          {
-            resolve: "./src/modules/shiprocket-fulfillment",
-            id: "shiprocket",
-          },
-        ],
+          }
+],
       },
     },
 
@@ -217,6 +234,6 @@ export default defineConfig({
     {
       resolve: "./src/modules/expert-call",
     },
-    ...redisModules,
-  ],
+    ...redisModules
+],
 })
