@@ -162,27 +162,69 @@ export const getAiCreditPacks = () => [
 export const getAiCreditPackByHandle = (handle: string) =>
   getAiCreditPacks().find((pack) => pack.product_handle === handle)
 
+export const normalizeAiPackText = (value: unknown) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+
 export const getAiCreditPackByHandleAndSku = (
   handle?: string | null,
-  sku?: string | null
+  sku?: string | null,
+  title?: string | null,
+  metadataPack?: string | null
 ) => {
   const packs = getAiCreditPacks()
   const cleanHandle = String(handle || "").trim()
   const cleanSku = String(sku || "").trim()
+  const cleanTitle = normalizeAiPackText(title)
+  const cleanMetadataPack = String(metadataPack || "").trim()
 
   return (
     packs.find(
       (pack) =>
-        pack.product_handle === cleanHandle &&
         cleanSku &&
-        String((pack as any).variant_sku || "") === cleanSku
+        String((pack as any).variant_sku || "").toLowerCase() ===
+          cleanSku.toLowerCase()
     ) ||
     packs.find(
       (pack) =>
-        pack.product_handle === cleanHandle &&
-        !String((pack as any).variant_sku || "").trim()
+        cleanMetadataPack &&
+        [
+          pack.id,
+          (pack as any).variant_sku,
+          pack.product_handle,
+          pack.variant_title,
+          pack.label,
+        ]
+          .filter(Boolean)
+          .map((value) => String(value).toLowerCase())
+          .includes(cleanMetadataPack.toLowerCase())
     ) ||
-    packs.find((pack) => pack.product_handle === cleanHandle)
+    packs.find((pack) => {
+      if (!cleanTitle) {
+        return false
+      }
+
+      const needles = [
+        pack.id,
+        pack.label,
+        pack.variant_title,
+        (pack as any).variant_sku,
+      ]
+        .map(normalizeAiPackText)
+        .filter(Boolean)
+
+      return needles.some((needle) => cleanTitle.includes(needle))
+    }) ||
+    packs.find(
+      (pack) =>
+        pack.product_handle === cleanHandle &&
+        cleanSku &&
+        String((pack as any).variant_sku || "").toLowerCase() ===
+          cleanSku.toLowerCase()
+    ) ||
+    null
   )
 }
 

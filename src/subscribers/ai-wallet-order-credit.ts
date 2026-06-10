@@ -4,6 +4,7 @@ import {
   createAiCreditLedgerId,
   createAiWalletId,
   getAiCreditPacks,
+  getAiCreditPackByHandleAndSku,
   parseNonNegativeInt,
 } from "../lib/ai-wallet"
 
@@ -15,6 +16,63 @@ type OrderEvent = {
 const getOrderId = (data: OrderEvent) => data.id || data.order_id || ""
 
 const toQuantity = (value: unknown) => Math.max(1, parseNonNegativeInt(value, 1))
+
+const normalizePackText = (value: unknown) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+
+const getLineSku = (line: any) =>
+  line?.variant?.sku ||
+  line?.variant_sku ||
+  line?.sku ||
+  line?.metadata?.variant_sku ||
+  line?.metadata?.sku ||
+  ""
+
+const getLineTitle = (line: any) =>
+  line?.title ||
+  line?.product_title ||
+  line?.variant_title ||
+  line?.product?.title ||
+  line?.variant?.title ||
+  line?.variant?.product?.title ||
+  line?.metadata?.title ||
+  ""
+
+const findAiPackForLine = (line: any, packs: any[]) => {
+  const handle = getLineHandle(line)
+  const sku = getLineSku(line)
+  const titleText = normalizePackText(getLineTitle(line))
+  const metadataPack =
+    line?.metadata?.ai_credit_pack ||
+    line?.metadata?.ai_pack ||
+    line?.metadata?.credit_pack ||
+    ""
+
+  return (
+    getAiCreditPackByHandleAndSku(handle, sku) ||
+    packs.find((pack) => sku && String(pack.variant_sku || "") === String(sku)) ||
+    packs.find((pack) => metadataPack && String(pack.id || "") === String(metadataPack)) ||
+    packs.find((pack) => metadataPack && String(pack.variant_sku || "") === String(metadataPack)) ||
+    packs.find((pack) => metadataPack && String(pack.product_handle || "") === String(metadataPack)) ||
+    packs.find((pack) => {
+      const packNeedles = [
+        pack.id,
+        pack.label,
+        pack.variant_title,
+        pack.variant_sku,
+        pack.product_handle,
+      ]
+        .map(normalizePackText)
+        .filter(Boolean)
+
+      return packNeedles.some((needle) => needle && titleText.includes(needle))
+    }) ||
+    null
+  )
+}
 
 const getLineHandle = (line: any) =>
   line?.product?.handle ||
@@ -73,6 +131,8 @@ export default async function aiWalletOrderCreditHandler({
   const aiWalletService = container.resolve(AI_WALLET_MODULE) as any
   const packs = getAiCreditPacks()
 
+  console.log("[ai-wallet-order-credit] processing order", { order_id: orderId })
+
   const { data } = await query.graph({
     entity: "order",
     fields: [
@@ -80,11 +140,21 @@ export default async function aiWalletOrderCreditHandler({
       "email",
       "customer_id",
       "items.quantity",
+      "items.title",
+      "items.product_title",
+      "items.variant_title",
+      "items.product_handle",
+      "items.variant_sku",
+      "items.sku",
       "items.metadata",
       "items.product.handle",
+      "items.product.title",
       "items.product.metadata",
+      "items.variant.sku",
+      "items.variant.title",
       "items.variant.metadata",
       "items.variant.product.handle",
+      "items.variant.product.title",
       "items.variant.product.metadata",
     ],
     filters: { id: orderId },
@@ -92,6 +162,7 @@ export default async function aiWalletOrderCreditHandler({
   const order = data?.[0]
 
   if (!order?.customer_id) {
+    console.warn("[ai-wallet-order-credit] no customer on order", { order_id: orderId })
     return
   }
 
@@ -101,6 +172,7 @@ export default async function aiWalletOrderCreditHandler({
   })
 
   if (existingLedger.length) {
+    console.log("[ai-wallet-order-credit] already credited", { order_id: order.id })
     return
   }
 
@@ -108,7 +180,9 @@ export default async function aiWalletOrderCreditHandler({
     (acc: any, line: any) => {
       const quantity = toQuantity(line?.quantity)
       const handle = getLineHandle(line)
-      const pack = packs.find((item) => item.product_handle === handle)
+      const sku = getLineSku(line)
+      const title = getLineTitle(line)
+      const pack = findAiPackForLine(line, packs)
       const metadataCredits = getLineMetadataCredits(line)
       const credits = (pack?.credits || metadataCredits) * quantity
       const metadataPlan = getLineMetadataPlan(line)
@@ -136,13 +210,22 @@ export default async function aiWalletOrderCreditHandler({
       return {
         credits: acc.credits + credits,
         premium: acc.premium || packPremium || metadataPremium,
-        handles: [...acc.handles, handle || "metadata"],
+        handles: [...acc.handles, handle || sku || title || "metadata"],
       }
     },
     { credits: 0, premium: null, handles: [] as string[] }
   )
 
   if (!grant.credits && !grant.premium) {
+    console.log("[ai-wallet-order-credit] no AI pack found", {
+      order_id: order.id,
+      items: (order.items || []).map((line: any) => ({
+        title: getLineTitle(line),
+        handle: getLineHandle(line),
+        sku: getLineSku(line),
+        metadata: line?.metadata || {},
+      })),
+    })
     return
   }
 
@@ -176,6 +259,15 @@ export default async function aiWalletOrderCreditHandler({
           pro_question_limit: grant.premium.pro_question_limit || 10,
         }
       : {}),
+  })
+
+  console.log("[ai-wallet-order-credit] credited order", {
+    order_id: order.id,
+    customer_id: order.customer_id,
+    credits: grant.credits,
+    premium: Boolean(grant.premium),
+    balance_after: nextBalance,
+    handles: grant.handles,
   })
 
   await aiWalletService.createAiCreditLedgers({

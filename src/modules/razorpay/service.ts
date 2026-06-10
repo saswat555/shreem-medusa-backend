@@ -20,25 +20,79 @@ const getKeyId = (options?: RazorpayOptions) =>
 const getKeySecret = (options?: RazorpayOptions) =>
   clean(options?.key_secret || process.env.RAZORPAY_KEY_SECRET)
 
+const readNumber = (value: any): number => {
+  if (value === null || value === undefined) {
+    return Number.NaN
+  }
+
+  if (typeof value === "number") {
+    return value
+  }
+
+  if (typeof value === "string") {
+    return Number(value)
+  }
+
+  if (typeof value === "bigint") {
+    return Number(value)
+  }
+
+  if (typeof value === "object") {
+    const candidates = [
+      value.numeric,
+      value.raw,
+      value.value,
+      value.amount,
+      value.decimal,
+    ]
+
+    for (const candidate of candidates) {
+      const parsed = readNumber(candidate)
+      if (Number.isFinite(parsed)) {
+        return parsed
+      }
+    }
+
+    if (typeof value.toString === "function") {
+      const parsed = Number(value.toString())
+      if (Number.isFinite(parsed)) {
+        return parsed
+      }
+    }
+  }
+
+  return Number.NaN
+}
+
 const getCurrency = (input: any) =>
-  String(input?.currency_code || process.env.RAZORPAY_CURRENCY || "INR").toUpperCase()
+  String(
+    input?.currency_code ||
+      input?.currency ||
+      input?.context?.currency_code ||
+      process.env.RAZORPAY_CURRENCY ||
+      "INR"
+  ).toUpperCase()
 
 const getAmount = (input: any) => {
-  const parsed = Number(input?.amount)
+  const parsed = readNumber(input?.amount)
   const currency = getCurrency(input)
 
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid Razorpay amount: ${input?.amount}`)
+    console.error("[razorpay-provider] invalid amount input", {
+      amount: input?.amount,
+      amount_type: typeof input?.amount,
+      currency,
+      keys: input ? Object.keys(input) : [],
+    })
+
+    throw new Error(`Invalid Razorpay amount: ${JSON.stringify(input?.amount)}`)
   }
 
-  const currencyExponents: Record<string, number> = {
-    INR: 2,
-  }
-
+  const currencyExponents: Record<string, number> = { INR: 2 }
   const exponent = currencyExponents[currency]
 
   if (exponent === undefined) {
-    throw new Error(`Unsupported Razorpay currency: ${currency}. Only INR is enabled for Shreem Farms checkout.`)
+    throw new Error(`Unsupported Razorpay currency: ${currency}. Shreem Farms checkout supports INR only.`)
   }
 
   const minorAmount = Math.round(parsed * Math.pow(10, exponent))
