@@ -7,8 +7,8 @@ type Body = {
   redirect_uri?: string
 }
 
-const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-const GOOGLE_TOKEN_INFO_URL = "https://oauth2.googleapis.com/tokeninfo"
+const GOOGLE_TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token"
+const GOOGLE_TOKEN_INFO_URL = "https://www.googleapis.com/oauth2/v3/tokeninfo"
 
 const base64url = (input: Buffer | string) =>
   Buffer.from(input)
@@ -38,6 +38,42 @@ const signJwt = (payload: Record<string, unknown>, secret: string) => {
 const makeId = (prefix: string) =>
   `${prefix}_${Date.now().toString(36)}${crypto.randomBytes(12).toString("hex")}`
 
+
+const fetchJsonWithTimeout = async (
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = 15000
+) => {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+
+    const body = await response.json().catch(() => ({}))
+
+    return {
+      response,
+      body,
+    }
+  } catch (error: any) {
+    console.error("[google-direct-callback] google fetch failed", {
+      url,
+      method: options.method || "GET",
+      name: error?.name,
+      message: error?.message,
+      cause: error?.cause,
+    })
+
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
   const code = String(req.body?.code || "").trim()
   const redirectUri = String(req.body?.redirect_uri || "").trim()
@@ -59,21 +95,20 @@ export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
   }
 
   try {
-    const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: "authorization_code",
-      }),
-    })
-
-    const tokenBody: any = await tokenRes.json().catch(() => ({}))
+    const { response: tokenRes, body: tokenBody } =
+      await fetchJsonWithTimeout(GOOGLE_TOKEN_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      })
 
     if (!tokenRes.ok || !tokenBody.id_token) {
       console.error("[google-direct-callback] token exchange failed", tokenBody)
@@ -82,11 +117,10 @@ export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
       })
     }
 
-    const infoRes = await fetch(
-      `${GOOGLE_TOKEN_INFO_URL}?id_token=${encodeURIComponent(tokenBody.id_token)}`
-    )
-
-    const info: any = await infoRes.json().catch(() => ({}))
+    const { response: infoRes, body: info } =
+      await fetchJsonWithTimeout(
+        `${GOOGLE_TOKEN_INFO_URL}?id_token=${encodeURIComponent(tokenBody.id_token)}`
+      )
 
     if (!infoRes.ok) {
       console.error("[google-direct-callback] tokeninfo failed", info)

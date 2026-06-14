@@ -97,6 +97,17 @@ const formatInr = (value?: number) =>
     maximumFractionDigits: 4,
   }).format(Math.max(0, Number(value || 0)))
 
+const getAiProvider = (item?: AiUsage | null) =>
+  String(item?.metadata?.ai_provider || item?.metadata?.provider || "gemini")
+
+const getAiAttempts = (item?: AiUsage | null) =>
+  Number(item?.metadata?.ai_attempts || 0)
+
+const getAiAttemptLogs = (item?: AiUsage | null) =>
+  Array.isArray(item?.metadata?.ai_attempt_logs)
+    ? (item?.metadata?.ai_attempt_logs as Array<Record<string, any>>)
+    : []
+
 const emptyUsageSummary = (): AiUsageSummary => ({
   sessions: 0,
   prompt_tokens: 0,
@@ -347,6 +358,10 @@ const AiUsagePage = () => {
                       {item.expert_recommended ? "Expert suggested" : "AI only"}
                     </Badge>
                     <Badge>{item.admin_status || "new"}</Badge>
+                    <Badge color="blue">{getAiProvider(item)}</Badge>
+                    {getAiAttempts(item) > 1 && (
+                      <Badge color="orange">{getAiAttempts(item)} attempts</Badge>
+                    )}
                   </div>
                   <Text className="text-ui-fg-subtle mt-1 text-sm">
                     {item.customer_email || item.customer_id}
@@ -384,7 +399,9 @@ const AiUsagePage = () => {
                 <Text className="text-ui-fg-muted text-xs">
                   {formatDate(selected.created_at)} ·{" "}
                   {formatNumber(selected.total_tokens)} tokens ·{" "}
-                  {formatInr(selected.estimated_cost_inr)}
+                  {formatInr(selected.estimated_cost_inr)} ·{" "}
+                  {getAiProvider(selected)} · {getAiAttempts(selected) || 1} attempt
+                  {(getAiAttempts(selected) || 1) === 1 ? "" : "s"}
                 </Text>
               </div>
 
@@ -452,6 +469,37 @@ const AiUsagePage = () => {
                 <Button isLoading={saving} onClick={saveReview}>
                   Save Review
                 </Button>
+              </div>
+
+              <div>
+                <Label>Model Attempts</Label>
+                {getAiAttemptLogs(selected).length ? (
+                  <div className="mt-2 space-y-2">
+                    {getAiAttemptLogs(selected).map((attempt, index) => (
+                      <div key={index} className="rounded-lg border p-3">
+                        <Text size="small" weight="plus">
+                          {String(attempt.provider || "gemini")} ·{" "}
+                          {String(attempt.model || selected.model || "model")}
+                        </Text>
+                        <Text className="text-ui-fg-muted mt-1 text-xs">
+                          Attempt {String(attempt.attempt || index + 1)} ·{" "}
+                          {attempt.ok ? "success" : "failed"} · status{" "}
+                          {String(attempt.status || "-")} ·{" "}
+                          {String(attempt.durationMs || 0)}ms
+                        </Text>
+                        {attempt.error && (
+                          <Text className="text-ui-fg-subtle mt-1 text-xs">
+                            {String(attempt.error).slice(0, 240)}
+                          </Text>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Text className="text-ui-fg-subtle mt-2 text-sm">
+                    No per-attempt log was stored for this session.
+                  </Text>
+                )}
               </div>
 
               <div>

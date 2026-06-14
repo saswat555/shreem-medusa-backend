@@ -187,6 +187,17 @@ export const getAiCreditPackByHandleAndSku = (
         String((pack as any).variant_sku || "").toLowerCase() ===
           cleanSku.toLowerCase()
     ) ||
+    packs.find((pack) => {
+      if (!cleanHandle || pack.product_handle !== cleanHandle) {
+        return false
+      }
+
+      const packsForHandle = packs.filter(
+        (candidate) => candidate.product_handle === cleanHandle
+      )
+
+      return packsForHandle.length === 1
+    }) ||
     packs.find(
       (pack) =>
         cleanMetadataPack &&

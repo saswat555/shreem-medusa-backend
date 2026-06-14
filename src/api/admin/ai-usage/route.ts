@@ -13,9 +13,19 @@ import {
   sanitizeText,
 } from "../../../lib/ai-usage"
 
-const isAdminRequest = (req: AuthenticatedMedusaRequest) =>
-  (req as any).auth_context?.actor_type === "user" &&
-  Boolean((req as any).auth_context?.actor_id)
+const isAuthenticatedAdminRequest = (req: any) => {
+  const authContext = req.auth_context || req.authContext || {}
+
+  return (
+    authContext.actor_type === "user" ||
+    authContext.actorType === "user" ||
+    Boolean(authContext.user_id) ||
+    Boolean(authContext.userId) ||
+    Boolean(authContext.actor_id) ||
+    Boolean(authContext.actorId) ||
+    Boolean(req.user?.id)
+  )
+}
 
 const toBooleanFilter = (value: unknown) => {
   if (value === "true" || value === true) {
@@ -29,6 +39,20 @@ const toBooleanFilter = (value: unknown) => {
   return undefined
 }
 
+const toValidDate = (value: string | undefined) => {
+  if (!value) {
+    return undefined
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return undefined
+  }
+
+  return date
+}
+
 const emptyCostSummary = () => ({
   sessions: 0,
   prompt_tokens: 0,
@@ -38,19 +62,31 @@ const emptyCostSummary = () => ({
   estimated_cost_inr: 0,
 })
 
-const addUsageCost = (summary: ReturnType<typeof emptyCostSummary>, item: any) => {
+const addUsageCost = (
+  summary: ReturnType<typeof emptyCostSummary>,
+  item: any
+) => {
   summary.sessions += 1
-  summary.prompt_tokens += Math.floor(parseNonNegativeNumber(item.prompt_tokens))
+
+  summary.prompt_tokens += Math.floor(
+    parseNonNegativeNumber(item.prompt_tokens)
+  )
+
   summary.completion_tokens += Math.floor(
     parseNonNegativeNumber(item.completion_tokens)
   )
-  summary.total_tokens += Math.floor(parseNonNegativeNumber(item.total_tokens))
+
+  summary.total_tokens += Math.floor(
+    parseNonNegativeNumber(item.total_tokens)
+  )
+
   summary.estimated_cost_usd = Number(
     (
       summary.estimated_cost_usd +
       parseNonNegativeNumber(item.estimated_cost_usd)
     ).toFixed(6)
   )
+
   summary.estimated_cost_inr = Number(
     (
       summary.estimated_cost_inr +
@@ -61,6 +97,7 @@ const addUsageCost = (summary: ReturnType<typeof emptyCostSummary>, item: any) =
 
 const getBillingBucket = (item: any) => {
   const metadata = item?.metadata_json || {}
+
   const mode = String(
     metadata.billing_mode ||
       metadata.access_reason ||
@@ -83,24 +120,32 @@ export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
-  if (!isAdminRequest(req)) {
+  if (!isAuthenticatedAdminRequest(req)) {
     return res.status(401).json({
-      message: "Admin authentication is required.",
       usage: [],
+      count: 0,
+      limit: 0,
+      offset: 0,
+      message: "Unauthorized admin request",
     })
   }
 
   const limit = parsePositiveInt(req.query.limit, 25, 100)
   const offset = Math.max(Number(req.query.offset || 0), 0)
+
   const filters: Record<string, unknown> = {}
+
   const customerId = sanitizeText(req.query.customer_id, 120)
   const customerEmail = sanitizeText(req.query.customer_email, 240)
   const tool = sanitizeText(req.query.tool, 80)
   const toolPrefix = sanitizeText(req.query.tool_prefix, 80)
   const adminStatus = sanitizeText(req.query.admin_status, 40)
-  const createdFrom = sanitizeText(req.query.created_from, 40)
-  const createdTo = sanitizeText(req.query.created_to, 40)
+  const createdFromRaw = sanitizeText(req.query.created_from, 40)
+  const createdToRaw = sanitizeText(req.query.created_to, 40)
   const expertRecommended = toBooleanFilter(req.query.expert_recommended)
+
+  const createdFrom = toValidDate(createdFromRaw)
+  const createdTo = toValidDate(createdToRaw)
 
   if (customerId) {
     filters.customer_id = customerId
@@ -126,30 +171,38 @@ export const GET = async (
 
   if (createdFrom || createdTo) {
     filters.created_at = {
-      ...(createdFrom ? { $gte: new Date(createdFrom) } : {}),
-      ...(createdTo ? { $lte: new Date(createdTo) } : {}),
+      ...(createdFrom ? { $gte: createdFrom } : {}),
+      ...(createdTo ? { $lte: createdTo } : {}),
     }
   }
 
   const aiUsageService = req.scope.resolve(AI_USAGE_MODULE) as any
+
   try {
-    const [usage, count] = await aiUsageService.listAndCountAiUsageLogs(filters, {
-      take: limit,
-      skip: offset,
-      order: {
-        created_at: "DESC",
-      },
-    })
+    const [usage, count] = await aiUsageService.listAndCountAiUsageLogs(
+      filters,
+      {
+        take: limit,
+        skip: offset,
+        order: {
+          created_at: "DESC",
+        },
+      }
+    )
+
     const summaryRows = await aiUsageService.listAiUsageLogs(filters, {
       take: 5000,
       order: {
         created_at: "DESC",
       },
     })
+
     const summary = summaryRows.reduce(
       (acc: any, item: any) => {
         addUsageCost(acc, item)
-        addUsageCost(acc[getBillingBucket(item)], item)
+
+        const bucket = getBillingBucket(item)
+        addUsageCost(acc[bucket], item)
 
         return acc
       },
@@ -162,6 +215,7 @@ export const GET = async (
     )
 
     return res.json({
+      synced: true,
       usage: usage.map((item: any) => ({
         ...formatAiUsageLog(item),
         input_preview: previewJson(item.input_json),
@@ -178,6 +232,7 @@ export const GET = async (
   } catch (error) {
     if (isAiUsageStorageMissing(error)) {
       return res.json({
+        synced: false,
         usage: [],
         count: 0,
         limit,
@@ -187,6 +242,10 @@ export const GET = async (
           "AI usage table is missing. Run NODE_ENV=production npm run db:migrate on the backend server.",
       })
     }
+
+    console.error("[admin/ai-usage] failed to list AI usage", {
+      error,
+    })
 
     throw error
   }

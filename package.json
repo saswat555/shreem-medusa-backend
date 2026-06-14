@@ -16,6 +16,7 @@
     "build": "medusa build",
     "db:migrate": "medusa db:migrate",
     "seed": "medusa exec ./src/scripts/seed.ts",
+    "blog:generate": "node scripts/generate-blog-post.cjs",
     "start": "medusa start",
     "start:prod": "NODE_ENV=production medusa start",
     "dev": "medusa develop",

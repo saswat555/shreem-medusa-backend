@@ -16,10 +16,30 @@ export default defineMiddlewares({
         sizeLimit: "12mb",
       },
     },
+
+    /**
+     * Admin AI Usage page.
+     * Without this, /admin/ai-usage returns 401 because auth_context is missing.
+     */
+    {
+      matcher: /^\/admin\/ai-usage(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/site-analytics(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+
+    /**
+     * Store/customer AI usage.
+     */
     {
       matcher: /^\/store\/ai-usage\/?$/,
-      middlewares: [authenticate("customer", ["session", "bearer"])],
+      middlewares: [authenticate("customer", ["session", "bearer"], {
+        allowUnregistered: true,
+      })],
     },
+
     {
       matcher: /^\/store\/ai-wallet(\/.*)?$/,
       middlewares: [authenticate("customer", ["session", "bearer"])],

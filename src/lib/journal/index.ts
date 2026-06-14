@@ -22,6 +22,11 @@ export type JournalPost = {
   author_name: string
   publishedAt: string
   sections: JournalSection[]
+  relatedLinks?: {
+    label: string
+    href: string
+    reason?: string
+  }[]
   created_at: string
   updated_at: string
 }

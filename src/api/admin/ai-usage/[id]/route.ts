@@ -11,9 +11,19 @@ import {
   sanitizeText,
 } from "../../../../lib/ai-usage"
 
-const isAdminRequest = (req: AuthenticatedMedusaRequest) =>
-  (req as any).auth_context?.actor_type === "user" &&
-  Boolean((req as any).auth_context?.actor_id)
+const isAuthenticatedAdminRequest = (req: any) => {
+  const authContext = req.auth_context || req.authContext || {}
+
+  return (
+    authContext.actor_type === "user" ||
+    authContext.actorType === "user" ||
+    Boolean(authContext.user_id) ||
+    Boolean(authContext.userId) ||
+    Boolean(authContext.actor_id) ||
+    Boolean(authContext.actorId) ||
+    Boolean(req.user?.id)
+  )
+}
 
 const ALLOWED_STATUSES = new Set([
   "new",
@@ -27,13 +37,14 @@ export const GET = async (
   req: AuthenticatedMedusaRequest<unknown, { id: string }>,
   res: MedusaResponse
 ) => {
-  if (!isAdminRequest(req)) {
+  if (!isAuthenticatedAdminRequest(req)) {
     return res.status(401).json({
-      message: "Admin authentication is required.",
+      message: "Unauthorized admin request",
     })
   }
 
   const aiUsageService = req.scope.resolve(AI_USAGE_MODULE) as any
+
   try {
     const usage = await aiUsageService.retrieveAiUsageLog(req.params.id)
 
@@ -43,8 +54,7 @@ export const GET = async (
   } catch (error) {
     if (isAiUsageStorageMissing(error)) {
       return res.status(503).json({
-        message:
-          "AI usage table is missing. Run backend database migrations.",
+        message: "AI usage table is missing. Run backend database migrations.",
       })
     }
 
@@ -63,9 +73,9 @@ export const PATCH = async (
   >,
   res: MedusaResponse
 ) => {
-  if (!isAdminRequest(req)) {
+  if (!isAuthenticatedAdminRequest(req)) {
     return res.status(401).json({
-      message: "Admin authentication is required.",
+      message: "Unauthorized admin request",
     })
   }
 
@@ -92,6 +102,7 @@ export const PATCH = async (
   }
 
   const aiUsageService = req.scope.resolve(AI_USAGE_MODULE) as any
+
   try {
     const usage = await aiUsageService.updateAiUsageLogs(req.params.id, update)
 
@@ -101,8 +112,7 @@ export const PATCH = async (
   } catch (error) {
     if (isAiUsageStorageMissing(error)) {
       return res.status(503).json({
-        message:
-          "AI usage table is missing. Run backend database migrations.",
+        message: "AI usage table is missing. Run backend database migrations.",
       })
     }
 

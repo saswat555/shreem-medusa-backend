@@ -44,7 +44,8 @@ const getLineTitle = (line: any) =>
 const findAiPackForLine = (line: any, packs: any[]) => {
   const handle = getLineHandle(line)
   const sku = getLineSku(line)
-  const titleText = normalizePackText(getLineTitle(line))
+  const title = getLineTitle(line)
+  const titleText = normalizePackText(title)
   const metadataPack =
     line?.metadata?.ai_credit_pack ||
     line?.metadata?.ai_pack ||
@@ -52,7 +53,7 @@ const findAiPackForLine = (line: any, packs: any[]) => {
     ""
 
   return (
-    getAiCreditPackByHandleAndSku(handle, sku) ||
+    getAiCreditPackByHandleAndSku(handle, sku, title, metadataPack) ||
     packs.find((pack) => sku && String(pack.variant_sku || "") === String(sku)) ||
     packs.find((pack) => metadataPack && String(pack.id || "") === String(metadataPack)) ||
     packs.find((pack) => metadataPack && String(pack.variant_sku || "") === String(metadataPack)) ||
