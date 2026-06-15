@@ -30,7 +30,7 @@
     "@medusajs/cli": "2.13.6",
     "@medusajs/framework": "^2.13.6",
     "@medusajs/medusa": "^2.13.6",
-    "nodemailer": "^8.0.10",
+    "nodemailer": "^9.0.0",
     "pg": "^8.21.0"
   },
   "devDependencies": {
