@@ -29,10 +29,22 @@ const isAdminRequest = (req: AuthenticatedMedusaRequest) =>
   (req as any).auth_context?.actor_type === "user" &&
   Boolean((req as any).auth_context?.actor_id)
 
+const setNoStoreHeaders = (res: MedusaResponse) => {
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate"
+  )
+  res.setHeader("Pragma", "no-cache")
+  res.setHeader("Expires", "0")
+  res.setHeader("Surrogate-Control", "no-store")
+}
+
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
+  setNoStoreHeaders(res)
+
   if (!isAdminRequest(req)) {
     return res.status(401).json({
       message: "Admin authentication is required.",
@@ -67,6 +79,8 @@ export const PATCH = async (
   req: AuthenticatedMedusaRequest<PatchBody, Params>,
   res: MedusaResponse
 ) => {
+  setNoStoreHeaders(res)
+
   if (!isAdminRequest(req)) {
     return res.status(401).json({
       message: "Admin authentication is required.",

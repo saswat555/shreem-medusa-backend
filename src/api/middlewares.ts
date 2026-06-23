@@ -16,6 +16,11 @@ export default defineMiddlewares({
         sizeLimit: "12mb",
       },
     },
+    {
+      matcher: "/hooks/razorpay",
+      methods: ["POST"],
+      bodyParser: false,
+    },
 
     /**
      * Admin AI Usage page.
@@ -27,6 +32,18 @@ export default defineMiddlewares({
     },
     {
       matcher: /^\/admin\/site-analytics(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/sales-dashboard(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/marketing-config(\/.*)?$/,
+      middlewares: [authenticate("user", ["session", "bearer"])],
+    },
+    {
+      matcher: /^\/admin\/ai-wallet(\/.*)?$/,
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
 

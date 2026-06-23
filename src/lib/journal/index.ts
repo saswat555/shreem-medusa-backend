@@ -15,6 +15,7 @@ export type JournalPost = {
   excerpt: string
   content?: string
   image: string
+  imageUrl?: string
   imageAlt: string
   category: string
   readTime: string
@@ -35,6 +36,7 @@ type CreateJournalPostInput = Partial<JournalPost> & {
   published_at?: string
   image_alt?: string
   read_time?: string
+  image_url?: string
 }
 
 const getProjectRoot = () => {
@@ -100,6 +102,16 @@ const buildSections = (input: CreateJournalPostInput): JournalSection[] => {
   ]
 }
 
+const BLOG_FALLBACK_IMAGE = "/logo.jpeg"
+
+const normalizeImageUrl = (value?: string | null) => {
+  const image = String(value || "").trim()
+
+  return image && image !== "/shreem-scenes/hero-scene.png"
+    ? image
+    : BLOG_FALLBACK_IMAGE
+}
+
 export const listJournalPosts = async () => {
   for (const file of getJournalFileCandidates()) {
     try {
@@ -152,7 +164,8 @@ export const createJournalPost = async (input: CreateJournalPostInput) => {
       excerpt ||
       "A Shreem Blog note on desi-cow products, ritual living, and natural care.",
     content,
-    image: input.image || "/shreem-scenes/hero-scene.png",
+    image: normalizeImageUrl(input.image || input.imageUrl || input.image_url),
+    imageUrl: normalizeImageUrl(input.imageUrl || input.image_url || input.image),
     imageAlt:
       input.imageAlt ||
       input.image_alt ||
@@ -233,9 +246,17 @@ export const updateJournalPost = async (
     excerpt: excerpt || existing.excerpt,
     content,
     image:
-      typeof input.image !== "undefined"
-        ? String(input.image || "").trim() || "/shreem-scenes/hero-scene.png"
+      typeof input.image !== "undefined" ||
+      typeof input.imageUrl !== "undefined" ||
+      typeof input.image_url !== "undefined"
+        ? normalizeImageUrl(input.image || input.imageUrl || input.image_url)
         : existing.image,
+    imageUrl:
+      typeof input.image !== "undefined" ||
+      typeof input.imageUrl !== "undefined" ||
+      typeof input.image_url !== "undefined"
+        ? normalizeImageUrl(input.imageUrl || input.image_url || input.image)
+        : existing.imageUrl || existing.image,
     imageAlt:
       typeof input.imageAlt !== "undefined" || typeof input.image_alt !== "undefined"
         ? String(input.imageAlt || input.image_alt || "").trim() ||
@@ -302,6 +323,29 @@ export const deleteJournalPost = async (idOrSlug: string) => {
 export const formatJournalPost = (post: JournalPost) => ({
   ...post,
   published_at: post.publishedAt,
+  image_url: post.imageUrl || post.image,
   image_alt: post.imageAlt,
   read_time: post.readTime,
+})
+
+export const formatJournalPostCard = (post: JournalPost) => ({
+  id: post.id,
+  slug: post.slug,
+  title: post.title,
+  description: post.description,
+  excerpt: post.excerpt,
+  image: post.image,
+  imageUrl: post.imageUrl || post.image,
+  image_url: post.imageUrl || post.image,
+  imageAlt: post.imageAlt,
+  image_alt: post.imageAlt,
+  category: post.category,
+  readTime: post.readTime,
+  read_time: post.readTime,
+  publishedAt: post.publishedAt,
+  published_at: post.publishedAt,
+  status: post.status,
+  author_name: post.author_name,
+  created_at: post.created_at,
+  updated_at: post.updated_at,
 })

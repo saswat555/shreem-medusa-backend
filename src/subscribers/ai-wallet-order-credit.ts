@@ -7,6 +7,7 @@ import {
   getAiCreditPackByHandleAndSku,
   parseNonNegativeInt,
 } from "../lib/ai-wallet"
+import { Client } from "pg"
 
 type OrderEvent = {
   id?: string
@@ -14,6 +15,8 @@ type OrderEvent = {
 }
 
 const getOrderId = (data: OrderEvent) => data.id || data.order_id || ""
+
+const getDatabaseUrl = () => process.env.DATABASE_URL || ""
 
 const toQuantity = (value: unknown) => Math.max(1, parseNonNegativeInt(value, 1))
 
@@ -118,6 +121,90 @@ const getLineMetadataQuestionLimit = (line: any) =>
     0
   )
 
+const attachRecoveredCartLedger = async ({
+  order,
+}: {
+  order: any
+}) => {
+  let cartId =
+    order?.metadata?.recovered_razorpay_cart_id ||
+    order?.metadata?.cart_id ||
+    order?.metadata?.source_cart_id ||
+    ""
+  const databaseUrl = getDatabaseUrl()
+
+  if (!cartId || !databaseUrl) {
+    return false
+  }
+
+  const client = new Client({ connectionString: databaseUrl })
+
+  try {
+    await client.connect()
+
+    if (!cartId) {
+      const cartResult = await client.query(
+        `
+          select cart_id
+          from order_cart
+          where order_id = $1
+            and deleted_at is null
+          order by created_at desc
+          limit 1
+        `,
+        [String(order.id)]
+      )
+
+      cartId = cartResult.rows[0]?.cart_id || ""
+    }
+
+    if (!cartId) {
+      return false
+    }
+
+    const result = await client.query(
+      `
+        update ai_credit_ledger
+        set
+          order_id = $2,
+          note = coalesce(note, '') || ' · Linked to repaired Medusa order.',
+          metadata_json = coalesce(metadata_json, '{}'::jsonb) || jsonb_build_object(
+            'repaired_order_id', $2::text,
+            'repair_linked_at', now()
+          ),
+          updated_at = now()
+        where deleted_at is null
+          and source = 'razorpay_captured_cart_recovery'
+          and order_id is null
+          and metadata_json->>'cart_id' = $1
+        returning id, credits
+      `,
+      [String(cartId), String(order.id)]
+    )
+
+    if (result.rowCount) {
+      console.log("[ai-wallet-order-credit] linked recovered ledger to order", {
+        order_id: order.id,
+        cart_id: cartId,
+        ledger_id: result.rows[0]?.id,
+        credits: result.rows[0]?.credits,
+      })
+
+      return true
+    }
+  } catch (error: any) {
+    console.error("[ai-wallet-order-credit] recovery ledger link failed", {
+      order_id: order?.id,
+      cart_id: cartId,
+      message: error?.message,
+    })
+  } finally {
+    await client.end().catch(() => undefined)
+  }
+
+  return false
+}
+
 export default async function aiWalletOrderCreditHandler({
   event,
   container,
@@ -140,6 +227,7 @@ export default async function aiWalletOrderCreditHandler({
       "id",
       "email",
       "customer_id",
+      "metadata",
       "items.quantity",
       "items.title",
       "items.product_title",
@@ -164,6 +252,12 @@ export default async function aiWalletOrderCreditHandler({
 
   if (!order?.customer_id) {
     console.warn("[ai-wallet-order-credit] no customer on order", { order_id: orderId })
+    return
+  }
+
+  const linkedRecoveredLedger = await attachRecoveredCartLedger({ order })
+
+  if (linkedRecoveredLedger) {
     return
   }
 

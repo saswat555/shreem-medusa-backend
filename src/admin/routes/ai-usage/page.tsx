@@ -25,6 +25,7 @@ type AiUsage = {
   prompt_tokens?: number
   completion_tokens?: number
   total_tokens?: number
+  raw_total_tokens?: number
   estimated_cost_usd?: number
   estimated_cost_inr?: number
   expert_recommended: boolean
@@ -46,6 +47,7 @@ type AiUsageSummary = {
   free?: AiUsageCostSummary
   paid?: AiUsageCostSummary
   unclassified?: AiUsageCostSummary
+  invoice?: AiUsageCostSummary
   sampled?: boolean
 }
 
@@ -72,6 +74,7 @@ const views: ViewFilter[] = [
   { label: "Astrology", query: { tool_prefix: "astrology" } },
   { label: "Grow AI", query: { tool: "grow_ai" } },
   { label: "Support AI", query: { tool: "support_ai" } },
+  { label: "Provider Billing", query: { tool: "provider_billing_invoice" } },
 ]
 
 const formatDate = (value?: string) =>
@@ -139,6 +142,14 @@ const emptyUsageSummary = (): AiUsageSummary => ({
     estimated_cost_usd: 0,
     estimated_cost_inr: 0,
   },
+  invoice: {
+    sessions: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    estimated_cost_usd: 0,
+    estimated_cost_inr: 0,
+  },
 })
 
 const statusOptions = ["new", "reviewed", "follow_up", "resolved", "archived"]
@@ -154,16 +165,19 @@ const AiUsagePage = () => {
   const [status, setStatus] = useState("new")
   const [tags, setTags] = useState("")
   const [setupMessage, setSetupMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
   const [summary, setSummary] = useState<AiUsageSummary>(emptyUsageSummary())
 
   const activeQuery = useMemo(() => views[activeView]?.query || {}, [activeView])
 
   const loadUsage = async () => {
     setLoading(true)
+    setErrorMessage("")
 
     try {
       const query: Record<string, string | number> = {
         limit: 50,
+        _ts: Date.now(),
         ...activeQuery,
       }
 
@@ -179,11 +193,19 @@ const AiUsagePage = () => {
       }>("/admin/ai-usage", {
         method: "GET",
         query,
+        cache: "no-store",
       })
 
       setSetupMessage(res.setup_required ? res.message || "" : "")
       setUsage(res.usage || [])
       setSummary(res.summary || emptyUsageSummary())
+    } catch (error: any) {
+      setUsage([])
+      setSummary(emptyUsageSummary())
+      setErrorMessage(
+        error?.message ||
+          "Unable to load AI usage. Refresh the admin session and try again."
+      )
     } finally {
       setLoading(false)
     }
@@ -198,6 +220,10 @@ const AiUsagePage = () => {
       `/admin/ai-usage/${item.id}`,
       {
         method: "GET",
+        query: {
+          _ts: Date.now(),
+        },
+        cache: "no-store",
       }
     )
     const detail = res.usage as AiUsage
@@ -256,6 +282,11 @@ const AiUsagePage = () => {
             <Text className="text-ui-fg-base">{setupMessage}</Text>
           </div>
         )}
+        {errorMessage && (
+          <div className="mt-4 rounded-lg border border-ui-border-error bg-ui-bg-subtle p-4">
+            <Text className="text-ui-fg-base">{errorMessage}</Text>
+          </div>
+        )}
       </Container>
 
       <Container className="space-y-4">
@@ -293,8 +324,8 @@ const AiUsagePage = () => {
             ["Sessions", formatNumber(summary.sessions)],
             ["Prompt tokens", formatNumber(summary.prompt_tokens)],
             ["Output tokens", formatNumber(summary.completion_tokens)],
-            ["Total tokens", formatNumber(summary.total_tokens)],
-            ["Cost INR", formatInr(summary.estimated_cost_inr)],
+            ["Billable tokens", formatNumber(summary.total_tokens)],
+            ["Provider cost INR", formatInr(summary.estimated_cost_inr)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-lg border p-4">
               <Text className="text-ui-fg-subtle text-xs">{label}</Text>
@@ -304,11 +335,12 @@ const AiUsagePage = () => {
             </div>
           ))}
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
           {[
-            ["Free-user AI cost", summary.free],
-            ["Paid-user AI cost", summary.paid],
-            ["Unclassified AI cost", summary.unclassified],
+            ["Free trial provider cost", summary.free],
+            ["Paid credit/premium provider cost", summary.paid],
+            ["Imported Google invoice cost", summary.invoice],
+            ["Unclassified provider cost", summary.unclassified],
           ].map(([label, value]) => {
             const bucket = value as AiUsageCostSummary | undefined
 
@@ -322,7 +354,7 @@ const AiUsagePage = () => {
                 </Text>
                 <Text className="text-ui-fg-muted mt-1 text-xs">
                   {formatNumber(bucket?.sessions)} sessions ·{" "}
-                  {formatNumber(bucket?.total_tokens)} tokens ·{" "}
+                  {formatNumber(bucket?.total_tokens)} billable tokens ·{" "}
                   {formatUsd(bucket?.estimated_cost_usd)}
                 </Text>
               </div>
@@ -375,7 +407,7 @@ const AiUsagePage = () => {
                   <Text className="text-ui-fg-muted mt-2 text-xs">
                     {formatDate(item.created_at)} · {item.model || "No model"} ·{" "}
                     Prompt {formatNumber(item.prompt_tokens)} · Output{" "}
-                    {formatNumber(item.completion_tokens)} · Total{" "}
+                    {formatNumber(item.completion_tokens)} · Billable{" "}
                     {formatNumber(item.total_tokens)} ·{" "}
                     {formatInr(item.estimated_cost_inr)}
                   </Text>
@@ -398,7 +430,7 @@ const AiUsagePage = () => {
                 </Text>
                 <Text className="text-ui-fg-muted text-xs">
                   {formatDate(selected.created_at)} ·{" "}
-                  {formatNumber(selected.total_tokens)} tokens ·{" "}
+                  {formatNumber(selected.total_tokens)} billable tokens ·{" "}
                   {formatInr(selected.estimated_cost_inr)} ·{" "}
                   {getAiProvider(selected)} · {getAiAttempts(selected) || 1} attempt
                   {(getAiAttempts(selected) || 1) === 1 ? "" : "s"}
@@ -419,13 +451,19 @@ const AiUsagePage = () => {
                   </Text>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <Text className="text-ui-fg-subtle text-xs">Total tokens</Text>
+                  <Text className="text-ui-fg-subtle text-xs">Billable tokens</Text>
                   <Text weight="plus">
                     {formatNumber(selected.total_tokens)}
                   </Text>
+                  {typeof selected.raw_total_tokens === "number" &&
+                    selected.raw_total_tokens !== selected.total_tokens && (
+                      <Text className="text-ui-fg-muted mt-1 text-xs">
+                        Provider raw total: {formatNumber(selected.raw_total_tokens)}
+                      </Text>
+                    )}
                 </div>
                 <div className="rounded-lg border p-3">
-                  <Text className="text-ui-fg-subtle text-xs">Cost INR</Text>
+                  <Text className="text-ui-fg-subtle text-xs">Provider cost INR</Text>
                   <Text weight="plus">
                     {formatInr(selected.estimated_cost_inr)}
                   </Text>

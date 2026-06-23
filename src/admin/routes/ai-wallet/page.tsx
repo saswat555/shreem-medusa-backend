@@ -66,6 +66,86 @@ const formatDate = (value?: string | null) =>
 const formatNumber = (value?: number) =>
   new Intl.NumberFormat("en-IN").format(Math.max(0, Number(value || 0)))
 
+const getLedgerLabel = (item: NonNullable<AiWallet["recent_ledger"]>[number]) => {
+  if (item.type === "order_credit") {
+    return "Recharge / order credit"
+  }
+
+  if (item.type === "consume") {
+    return "Credit consumed"
+  }
+
+  if (item.type === "premium_usage") {
+    return "Premium usage"
+  }
+
+  if (item.type === "admin_adjustment") {
+    return "Admin adjustment"
+  }
+
+  return item.type.replace(/_/g, " ")
+}
+
+const getLedgerTone = (item: NonNullable<AiWallet["recent_ledger"]>[number]) =>
+  Number(item.credits || 0) > 0
+    ? "green"
+    : Number(item.credits || 0) < 0
+    ? "orange"
+    : "blue"
+
+const summarizeLedger = (ledger: AiWallet["recent_ledger"] = []) =>
+  ledger.reduce(
+    (summary, item) => {
+      const credits = Number(item.credits || 0)
+
+      if (credits > 0) {
+        summary.recharged += credits
+      } else if (credits < 0) {
+        summary.consumed += Math.abs(credits)
+      } else if (item.type === "premium_usage") {
+        summary.premiumUses += 1
+      }
+
+      return summary
+    },
+    { recharged: 0, consumed: 0, premiumUses: 0 }
+  )
+
+const noStoreHeaders = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  Pragma: "no-cache",
+  Expires: "0",
+}
+
+const clearAdminAuthAndReload = () => {
+  try {
+    for (const storage of [window.localStorage, window.sessionStorage]) {
+      for (let index = storage.length - 1; index >= 0; index -= 1) {
+        const key = storage.key(index)
+
+        if (key && /(token|auth|medusa|session)/i.test(key)) {
+          storage.removeItem(key)
+        }
+      }
+    }
+  } catch {
+    // Ignore storage cleanup failures and still send the admin back to login.
+  }
+
+  window.location.replace("/app/login?expired=1")
+}
+
+const handleAdminFetchError = (error: unknown) => {
+  const message =
+    error instanceof Error ? error.message : typeof error === "string" ? error : ""
+
+  if (/unauthorized|401/i.test(message)) {
+    clearAdminAuthAndReload()
+  }
+
+  throw error
+}
+
 const AiWalletPage = () => {
   const [wallets, setWallets] = useState<AiWallet[]>([])
   const [selected, setSelected] = useState<AiWallet | null>(null)
@@ -84,12 +164,15 @@ const AiWalletPage = () => {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [setupMessage, setSetupMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
 
   const loadWallets = async () => {
     setLoading(true)
+    setErrorMessage("")
 
     try {
       const query: Record<string, string | number> = { limit: 50 }
+      query._ts = Date.now()
 
       if (customerFilter.trim()) {
         query.customer_email = customerFilter.trim()
@@ -104,7 +187,9 @@ const AiWalletPage = () => {
       }>("/admin/ai-wallet", {
         method: "GET",
         query,
-      })
+        headers: noStoreHeaders,
+        cache: "no-store",
+      }).catch(handleAdminFetchError)
 
       setSetupMessage(res.setup_required ? res.message || "" : "")
       setWallets(res.wallets || [])
@@ -112,6 +197,13 @@ const AiWalletPage = () => {
         res.summary || { wallets: 0, total_credits: 0, premium_wallets: 0 }
       )
       setPacks(res.packs || [])
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "AI wallets could not be loaded."
+      setErrorMessage(message)
+      setWallets([])
     } finally {
       setLoading(false)
     }
@@ -122,10 +214,17 @@ const AiWalletPage = () => {
   }, [])
 
   const openWallet = async (wallet: AiWallet) => {
+    setErrorMessage("")
+
     const res = await sdk.client.fetch<{ wallet: AiWallet }>(
       `/admin/ai-wallet/${wallet.id}`,
-      { method: "GET" }
-    )
+      {
+        method: "GET",
+        query: { _ts: Date.now() },
+        headers: noStoreHeaders,
+        cache: "no-store",
+      }
+    ).catch(handleAdminFetchError)
     const detail = res.wallet
 
     setSelected(detail)
@@ -146,13 +245,19 @@ const AiWalletPage = () => {
     }
 
     setSaving(true)
+    setErrorMessage("")
 
     try {
       const res = await sdk.client.fetch<{ wallet: AiWallet }>(
         `/admin/ai-wallet/${selected.id}`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          query: { _ts: Date.now() },
+          headers: {
+            "Content-Type": "application/json",
+            ...noStoreHeaders,
+          },
+          cache: "no-store",
           body: {
             add_credits: creditDelta ? Number(creditDelta) : 0,
             plan,
@@ -161,7 +266,7 @@ const AiWalletPage = () => {
             note,
           },
         }
-      )
+      ).catch(handleAdminFetchError)
       const updated = res.wallet
 
       setSelected(updated)
@@ -171,6 +276,10 @@ const AiWalletPage = () => {
       setCreditDelta("")
       setNote("")
       loadWallets()
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to save this wallet."
+      )
     } finally {
       setSaving(false)
     }
@@ -183,6 +292,11 @@ const AiWalletPage = () => {
         <Text className="text-ui-fg-subtle mt-2">
           Manage paid credits and premium access for astrology AI usage.
         </Text>
+        {errorMessage && (
+          <div className="mt-4 rounded-lg border border-ui-border-error bg-ui-bg-error px-4 py-3">
+            <Text className="text-ui-fg-error">{errorMessage}</Text>
+          </div>
+        )}
         {setupMessage && (
           <div className="mt-4 rounded-lg border border-ui-border-warning bg-ui-bg-subtle p-4">
             <Text>{setupMessage}</Text>
@@ -296,6 +410,39 @@ const AiWalletPage = () => {
             <Text>Select a wallet to adjust credits or premium.</Text>
           ) : (
             <>
+              {(() => {
+                const ledgerSummary = summarizeLedger(selected.recent_ledger)
+
+                return (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg border p-3">
+                      <Text className="text-ui-fg-muted text-xs">
+                        Recharged
+                      </Text>
+                      <Text weight="plus">
+                        +{formatNumber(ledgerSummary.recharged)}
+                      </Text>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <Text className="text-ui-fg-muted text-xs">
+                        Consumed
+                      </Text>
+                      <Text weight="plus">
+                        -{formatNumber(ledgerSummary.consumed)}
+                      </Text>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <Text className="text-ui-fg-muted text-xs">
+                        Premium uses
+                      </Text>
+                      <Text weight="plus">
+                        {formatNumber(ledgerSummary.premiumUses)}
+                      </Text>
+                    </div>
+                  </div>
+                )
+              })()}
+
               <div>
                 <Text weight="plus">
                   {selected.customer_email || selected.customer_id}
@@ -365,10 +512,13 @@ const AiWalletPage = () => {
                 <div className="mt-2 space-y-2">
                   {(selected.recent_ledger || []).map((item) => (
                     <div key={item.id} className="rounded-lg border p-3">
-                      <Text weight="plus">
-                        {item.type} · {item.credits > 0 ? "+" : ""}
-                        {item.credits}
-                      </Text>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Text weight="plus">{getLedgerLabel(item)}</Text>
+                        <Badge color={getLedgerTone(item) as any}>
+                          {item.credits > 0 ? "+" : ""}
+                          {item.credits}
+                        </Badge>
+                      </div>
                       <Text className="text-ui-fg-muted text-xs">
                         Balance {item.balance_after} · {formatDate(item.created_at)}
                       </Text>
@@ -377,9 +527,19 @@ const AiWalletPage = () => {
                         {item.order_id ? ` · Order ${item.order_id}` : ""}
                         {item.usage_id ? ` · Usage ${item.usage_id}` : ""}
                       </Text>
+                      {item.metadata?.razorpay_order_id && (
+                        <Text className="text-ui-fg-muted mt-1 text-xs">
+                          Razorpay order: {String(item.metadata.razorpay_order_id)}
+                        </Text>
+                      )}
+                      {item.metadata?.razorpay_payment_id && (
+                        <Text className="text-ui-fg-muted mt-1 text-xs">
+                          Razorpay payment: {String(item.metadata.razorpay_payment_id)}
+                        </Text>
+                      )}
                       {item.metadata &&
                         Object.keys(item.metadata).length > 0 && (
-                          <Text className="text-ui-fg-muted mt-1 text-xs">
+                          <Text className="text-ui-fg-muted mt-2 break-all text-xs">
                             Metadata: {JSON.stringify(item.metadata)}
                           </Text>
                         )}

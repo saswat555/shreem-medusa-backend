@@ -126,6 +126,66 @@ const verifySignature = ({
   return expected === signature
 }
 
+const getRazorpayAuthHeader = (options?: RazorpayOptions) => {
+  const keyId = getKeyId(options)
+  const keySecret = getKeySecret(options)
+
+  if (!keyId || !keySecret) {
+    return ""
+  }
+
+  return `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`
+}
+
+const verifyCapturedPayment = async ({
+  options,
+  orderId,
+  paymentId,
+  expectedAmount,
+}: {
+  options?: RazorpayOptions
+  orderId?: string | null
+  paymentId?: string | null
+  expectedAmount?: number | null
+}) => {
+  const authorization = getRazorpayAuthHeader(options)
+
+  if (!authorization || !orderId || !paymentId) {
+    return { verified: false, payment: null as any, reason: "missing_credentials_or_ids" }
+  }
+
+  const response = await fetch(
+    `https://api.razorpay.com/v1/orders/${orderId}/payments`,
+    {
+      headers: { Authorization: authorization },
+    }
+  )
+
+  if (!response.ok) {
+    return { verified: false, payment: null as any, reason: `razorpay_${response.status}` }
+  }
+
+  const body = await response.json()
+  const payment = (body?.items || []).find(
+    (item: any) => String(item?.id || "") === String(paymentId)
+  )
+  const captured = Boolean(payment?.captured) || payment?.status === "captured"
+  const amountMatches =
+    !expectedAmount || Number(payment?.amount || 0) === Number(expectedAmount)
+
+  return {
+    verified: Boolean(payment && captured && amountMatches),
+    payment,
+    reason: !payment
+      ? "payment_not_found"
+      : !captured
+      ? "payment_not_captured"
+      : !amountMatches
+      ? "amount_mismatch"
+      : "captured",
+  }
+}
+
 class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
   static identifier = "razorpay"
 
@@ -255,17 +315,32 @@ class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
       data.razorpaySignature ||
       data.signature
 
-    if (orderId && paymentId && signature) {
-      const verified = verifySignature({
-        keySecret,
-        orderId: String(orderId),
-        paymentId: String(paymentId),
-        signature: String(signature),
-      })
+    if (orderId && paymentId) {
+      const signatureVerified = signature
+        ? verifySignature({
+            keySecret,
+            orderId: String(orderId),
+            paymentId: String(paymentId),
+            signature: String(signature),
+          })
+        : false
+      const captureVerification = signatureVerified
+        ? { verified: false, payment: null, reason: "signature_verified" }
+        : await verifyCapturedPayment({
+            options: this.options_,
+            orderId: String(orderId),
+            paymentId: String(paymentId),
+            expectedAmount: Number(data.razorpay_amount || data.amount || 0) || null,
+          })
+      const verified = signatureVerified || captureVerification.verified
 
       console.log("[razorpay-provider] authorize", {
         order_id: orderId,
         payment_id: paymentId,
+        signature_present: Boolean(signature),
+        signature_verified: signatureVerified,
+        capture_verified: captureVerification.verified,
+        capture_reason: captureVerification.reason,
         verified,
       })
 
@@ -277,8 +352,15 @@ class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
           ...data,
           provider: "razorpay",
           verified,
-          signature_verified: verified,
-          razorpay_status: verified ? "authorized" : "verification_failed",
+          signature_verified: signatureVerified,
+          captured_payment_verified: captureVerification.verified,
+          razorpay_status: verified
+            ? captureVerification.verified
+              ? "captured"
+              : "authorized"
+            : "verification_failed",
+          razorpay_payment_status:
+            captureVerification.payment?.status || data.razorpay_payment_status,
         },
       }
     }
@@ -327,19 +409,39 @@ class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
   async getPaymentStatus(input: any) {
     const data = input?.data || {}
 
-    if (data.verified || data.signature_verified) {
+    if (data.verified || data.signature_verified || data.captured_payment_verified) {
       return {
         status: PaymentSessionStatus.AUTHORIZED,
         data,
       }
     }
 
-    if (data.razorpay_payment_id && !data.signature_verified) {
+    if (data.razorpay_payment_id && data.razorpay_order_id) {
+      const captureVerification = await verifyCapturedPayment({
+        options: this.options_,
+        orderId: String(data.razorpay_order_id),
+        paymentId: String(data.razorpay_payment_id),
+        expectedAmount: Number(data.razorpay_amount || data.amount || 0) || null,
+      })
+
+      if (captureVerification.verified) {
+        return {
+          status: PaymentSessionStatus.AUTHORIZED,
+          data: {
+            ...data,
+            verified: true,
+            captured_payment_verified: true,
+            razorpay_status: "captured",
+            razorpay_payment_status: captureVerification.payment?.status,
+          },
+        }
+      }
+
       return {
         status: PaymentSessionStatus.PENDING,
         data: {
           ...data,
-          reason: "razorpay_signature_not_verified",
+          reason: captureVerification.reason || "razorpay_signature_not_verified",
         },
       }
     }
@@ -392,10 +494,15 @@ class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
       data.razorpaySignature ||
       data.signature
 
-    let verified = Boolean(data.verified || data.signature_verified)
+    let signatureVerified = Boolean(data.signature_verified)
+    let captureVerification: Awaited<ReturnType<typeof verifyCapturedPayment>> = {
+      verified: false,
+      payment: null,
+      reason: "not_checked",
+    }
 
     if (orderId && paymentId && signature && keySecret) {
-      verified = verifySignature({
+      signatureVerified = verifySignature({
         keySecret,
         orderId: String(orderId),
         paymentId: String(paymentId),
@@ -403,19 +510,44 @@ class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
       })
     }
 
+    if (orderId && paymentId && !signatureVerified) {
+      captureVerification = await verifyCapturedPayment({
+        options: this.options_,
+        orderId: String(orderId),
+        paymentId: String(paymentId),
+        expectedAmount: Number(data.razorpay_amount || data.amount || 0) || null,
+      })
+    }
+
+    const verified =
+      Boolean(data.verified) || signatureVerified || captureVerification.verified
+
     console.log("[razorpay-provider] updatePayment", {
       order_id: orderId || "missing",
       payment_id: paymentId || "missing",
       signature_present: Boolean(signature),
+      signature_verified: signatureVerified,
+      capture_verified: captureVerification.verified,
+      capture_reason: captureVerification.reason,
       verified,
     })
 
     return {
+      status: verified
+        ? PaymentSessionStatus.AUTHORIZED
+        : PaymentSessionStatus.PENDING,
       data: {
         ...data,
         verified,
-        signature_verified: verified,
-        razorpay_status: verified ? "authorized" : "verification_failed",
+        signature_verified: signatureVerified,
+        captured_payment_verified: captureVerification.verified,
+        razorpay_status: verified
+          ? captureVerification.verified
+            ? "captured"
+            : "authorized"
+          : "verification_failed",
+        razorpay_payment_status:
+          captureVerification.payment?.status || data.razorpay_payment_status,
       },
     }
   }

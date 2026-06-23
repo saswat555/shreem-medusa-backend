@@ -248,6 +248,518 @@
           "length": null,
           "precision": null,
           "scale": null,
+          "default": "'default'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "order_stakeholder_recipients": {
+          "name": "order_stakeholder_recipients",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "''",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "order_stakeholder_enabled": {
+          "name": "order_stakeholder_enabled",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "admin_mail_settings",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "admin_mail_settings_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'default'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "meta_ad_account_id": {
+          "name": "meta_ad_account_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "meta_access_token_encrypted": {
+          "name": "meta_access_token_encrypted",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "daily_budget_inr": {
+          "name": "daily_budget_inr",
+          "type": "numeric",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "monthly_budget_inr": {
+          "name": "monthly_budget_inr",
+          "type": "numeric",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "objective": {
+          "name": "objective",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'sales'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "is_enabled": {
+          "name": "is_enabled",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "google_ads_customer_id": {
+          "name": "google_ads_customer_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "google_ads_token_encrypted": {
+          "name": "google_ads_token_encrypted",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "google_daily_budget_inr": {
+          "name": "google_daily_budget_inr",
+          "type": "numeric",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "meta_daily_budget_inr": {
+          "name": "meta_daily_budget_inr",
+          "type": "numeric",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "max_cac_inr": {
+          "name": "max_cac_inr",
+          "type": "numeric",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "target_roas": {
+          "name": "target_roas",
+          "type": "numeric",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "creative_focus": {
+          "name": "creative_focus",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'a2_ghee'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "ai_targeting_enabled": {
+          "name": "ai_targeting_enabled",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "content_approval_required": {
+          "name": "content_approval_required",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "reels_per_week": {
+          "name": "reels_per_week",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": "4",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "engagement_mode": {
+          "name": "engagement_mode",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'manual_review'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "target_product_handle": {
+          "name": "target_product_handle",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        }
+      },
+      "name": "admin_marketing_config",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "admin_marketing_config_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
           "default": null,
           "comment": null,
           "enumItems": [],
@@ -276,7 +788,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "unique": false,
+          "unique": true,
           "length": null,
           "precision": null,
           "scale": null,
@@ -372,7 +884,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "unique": false,
+          "unique": true,
           "length": null,
           "precision": null,
           "scale": null,
@@ -492,6 +1004,40 @@
           "unique": false,
           "primary": false,
           "expression": "CREATE INDEX \"IDX_ai_credit_ledger_customer_created_at\" ON public.ai_credit_ledger USING btree (customer_id, created_at) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "order_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_ai_credit_ledger_order_credit_once",
+          "unique": true,
+          "primary": false,
+          "expression": "CREATE UNIQUE INDEX \"IDX_ai_credit_ledger_order_credit_once\" ON public.ai_credit_ledger USING btree (order_id) WHERE ((deleted_at IS NULL) AND (type = 'order_credit'::text) AND (order_id IS NOT NULL) AND (COALESCE(source, ''::text) <> 'sync_credit_product_orders'::text))"
+        },
+        {
+          "columnNames": [
+            "(metadata_json ->> razorpay_order_id::text)"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_ai_credit_ledger_recovery_razorpay_once",
+          "unique": true,
+          "primary": false,
+          "expression": "CREATE UNIQUE INDEX \"IDX_ai_credit_ledger_recovery_razorpay_once\" ON public.ai_credit_ledger USING btree (((metadata_json ->> 'razorpay_order_id'::text))) WHERE ((deleted_at IS NULL) AND (source = 'razorpay_captured_cart_recovery'::text) AND ((metadata_json ->> 'razorpay_order_id'::text) IS NOT NULL))"
+        },
+        {
+          "columnNames": [
+            "customer_id",
+            "usage_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "IDX_ai_credit_ledger_usage_once",
+          "unique": true,
+          "primary": false,
+          "expression": "CREATE UNIQUE INDEX \"IDX_ai_credit_ledger_usage_once\" ON public.ai_credit_ledger USING btree (customer_id, usage_id) WHERE ((deleted_at IS NULL) AND (usage_id IS NOT NULL) AND (type = ANY (ARRAY['consume'::text, 'premium_usage'::text])))"
         },
         {
           "columnNames": [
@@ -4198,6 +4744,412 @@
     },
     {
       "columns": {
+        "cart_id": {
+          "name": "cart_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "payment_collection_id": {
+          "name": "payment_collection_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "cart_payment_collection",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "cart_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_cart_id_-4a39f6c9",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_cart_id_-4a39f6c9\" ON public.cart_payment_collection USING btree (cart_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-4a39f6c9",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-4a39f6c9",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "payment_collection_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_payment_collection_id_-4a39f6c9",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_payment_collection_id_-4a39f6c9\" ON public.cart_payment_collection USING btree (payment_collection_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "cart_id",
+            "payment_collection_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "cart_payment_collection_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "cart_id": {
+          "name": "cart_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "promotion_id": {
+          "name": "promotion_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "cart_promotion",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "cart_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_cart_id_-a9d4a70b",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_cart_id_-a9d4a70b\" ON public.cart_promotion USING btree (cart_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-a9d4a70b",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-a9d4a70b",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "promotion_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_promotion_id_-a9d4a70b",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_promotion_id_-a9d4a70b\" ON public.cart_promotion USING btree (promotion_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "cart_id",
+            "promotion_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "cart_promotion_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
         "id": {
           "name": "id",
           "type": "text",
@@ -5836,6 +6788,209 @@
           "composite": false,
           "constraint": false,
           "keyName": "customer_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "customer_id": {
+          "name": "customer_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "account_holder_id": {
+          "name": "account_holder_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "customer_account_holder",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "account_holder_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_account_holder_id_5cb3a0c0",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_account_holder_id_5cb3a0c0\" ON public.customer_account_holder USING btree (account_holder_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "customer_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_customer_id_5cb3a0c0",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_customer_id_5cb3a0c0\" ON public.customer_account_holder USING btree (customer_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_5cb3a0c0",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_5cb3a0c0",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "customer_id",
+            "account_holder_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "customer_account_holder_pkey",
           "unique": true,
           "primary": true
         }
@@ -9917,6 +11072,753 @@
     },
     {
       "columns": {
+        "invite_id": {
+          "name": "invite_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "rbac_role_id": {
+          "name": "rbac_role_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "invite_rbac_role",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-85069d44",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-85069d44",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "invite_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_invite_id_-85069d44",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_invite_id_-85069d44\" ON public.invite_rbac_role USING btree (invite_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "rbac_role_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_rbac_role_id_-85069d44",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_rbac_role_id_-85069d44\" ON public.invite_rbac_role USING btree (rbac_role_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "invite_id",
+            "rbac_role_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "invite_rbac_role_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int4",
+          "unsigned": true,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "table_name": {
+          "name": "table_name",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "link_descriptor": {
+          "name": "link_descriptor",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'{}'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "link_module_migrations",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "link_module_migrations_pkey",
+          "unique": true,
+          "primary": true
+        },
+        {
+          "columnNames": [
+            "table_name"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "link_module_migrations_table_name_key",
+          "unique": true,
+          "primary": false
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "stock_location_id": {
+          "name": "stock_location_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "fulfillment_provider_id": {
+          "name": "fulfillment_provider_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "location_fulfillment_provider",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-1e5992737",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "fulfillment_provider_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_fulfillment_provider_id_-1e5992737",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_fulfillment_provider_id_-1e5992737\" ON public.location_fulfillment_provider USING btree (fulfillment_provider_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-1e5992737",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "stock_location_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_stock_location_id_-1e5992737",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_stock_location_id_-1e5992737\" ON public.location_fulfillment_provider USING btree (stock_location_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "stock_location_id",
+            "fulfillment_provider_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "location_fulfillment_provider_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "stock_location_id": {
+          "name": "stock_location_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "fulfillment_set_id": {
+          "name": "fulfillment_set_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "location_fulfillment_set",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-e88adb96",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "fulfillment_set_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_fulfillment_set_id_-e88adb96",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_fulfillment_set_id_-e88adb96\" ON public.location_fulfillment_set USING btree (fulfillment_set_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-e88adb96",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "stock_location_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_stock_location_id_-e88adb96",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_stock_location_id_-e88adb96\" ON public.location_fulfillment_set USING btree (stock_location_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "stock_location_id",
+            "fulfillment_set_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "location_fulfillment_set_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
         "id": {
           "name": "id",
           "type": "text",
@@ -11364,6 +13266,209 @@
           "composite": false,
           "constraint": false,
           "keyName": "order_address_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "order_id": {
+          "name": "order_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "cart_id": {
+          "name": "cart_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "order_cart",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "cart_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_cart_id_-71069c16",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_cart_id_-71069c16\" ON public.order_cart USING btree (cart_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-71069c16",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-71069c16",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "order_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_order_id_-71069c16",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_order_id_-71069c16\" ON public.order_cart USING btree (order_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "order_id",
+            "cart_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "order_cart_pkey",
           "unique": true,
           "primary": true
         }
@@ -14195,6 +16300,209 @@
     },
     {
       "columns": {
+        "order_id": {
+          "name": "order_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "fulfillment_id": {
+          "name": "fulfillment_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "order_fulfillment",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-e8d2543e",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "fulfillment_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_fulfillment_id_-e8d2543e",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_fulfillment_id_-e8d2543e\" ON public.order_fulfillment USING btree (fulfillment_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-e8d2543e",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "order_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_order_id_-e8d2543e",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_order_id_-e8d2543e\" ON public.order_fulfillment USING btree (order_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "order_id",
+            "fulfillment_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "order_fulfillment_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
         "id": {
           "name": "id",
           "type": "text",
@@ -15901,6 +18209,412 @@
           "deleteRule": "cascade"
         }
       },
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "order_id": {
+          "name": "order_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "payment_collection_id": {
+          "name": "payment_collection_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "order_payment_collection",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_f42b9949",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_f42b9949",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "order_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_order_id_f42b9949",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_order_id_f42b9949\" ON public.order_payment_collection USING btree (order_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "payment_collection_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_payment_collection_id_f42b9949",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_payment_collection_id_f42b9949\" ON public.order_payment_collection USING btree (payment_collection_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "order_id",
+            "payment_collection_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "order_payment_collection_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "order_id": {
+          "name": "order_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "promotion_id": {
+          "name": "promotion_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "order_promotion",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-71518339",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-71518339",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "order_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_order_id_-71518339",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_order_id_-71518339\" ON public.order_promotion USING btree (order_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "promotion_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_promotion_id_-71518339",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_promotion_id_-71518339\" ON public.order_promotion USING btree (promotion_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "order_id",
+            "promotion_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "order_promotion_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
       "nativeEnums": {
         "claim_reason_enum": {
           "name": "claim_reason_enum",
@@ -22145,6 +24859,412 @@
     },
     {
       "columns": {
+        "product_id": {
+          "name": "product_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "sales_channel_id": {
+          "name": "sales_channel_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "product_sales_channel",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_20b454295",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_20b454295",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "product_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_product_id_20b454295",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_product_id_20b454295\" ON public.product_sales_channel USING btree (product_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "sales_channel_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_sales_channel_id_20b454295",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_sales_channel_id_20b454295\" ON public.product_sales_channel USING btree (sales_channel_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "product_id",
+            "sales_channel_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "product_sales_channel_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "product_id": {
+          "name": "product_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "shipping_profile_id": {
+          "name": "shipping_profile_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "product_shipping_profile",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_17a262437",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_17a262437",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "product_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_product_id_17a262437",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_product_id_17a262437\" ON public.product_shipping_profile USING btree (product_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "shipping_profile_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_shipping_profile_id_17a262437",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_shipping_profile_id_17a262437\" ON public.product_shipping_profile USING btree (shipping_profile_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "product_id",
+            "shipping_profile_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "product_shipping_profile_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
         "id": {
           "name": "id",
           "type": "text",
@@ -23156,6 +26276,225 @@
       "columns": {
         "variant_id": {
           "name": "variant_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "inventory_item_id": {
+          "name": "inventory_item_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "required_quantity": {
+          "name": "required_quantity",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": "1",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "product_variant_inventory_item",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_17b4c4e35",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_17b4c4e35",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "inventory_item_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_inventory_item_id_17b4c4e35",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_inventory_item_id_17b4c4e35\" ON public.product_variant_inventory_item USING btree (inventory_item_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "variant_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_variant_id_17b4c4e35",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_variant_id_17b4c4e35\" ON public.product_variant_inventory_item USING btree (variant_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "variant_id",
+            "inventory_item_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "product_variant_inventory_item_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "variant_id": {
+          "name": "variant_id",
           "type": "text",
           "unsigned": false,
           "autoincrement": false,
@@ -23231,6 +26570,209 @@
           "deleteRule": "cascade"
         }
       },
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "variant_id": {
+          "name": "variant_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "price_set_id": {
+          "name": "price_set_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "product_variant_price_set",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_52b23597",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_52b23597",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "price_set_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_price_set_id_52b23597",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_price_set_id_52b23597\" ON public.product_variant_price_set USING btree (price_set_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "variant_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_variant_id_52b23597",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_variant_id_52b23597\" ON public.product_variant_price_set USING btree (variant_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "variant_id",
+            "price_set_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "product_variant_price_set_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
       "nativeEnums": {
         "claim_reason_enum": {
           "name": "claim_reason_enum",
@@ -25833,6 +29375,209 @@
     },
     {
       "columns": {
+        "publishable_key_id": {
+          "name": "publishable_key_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "sales_channel_id": {
+          "name": "sales_channel_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "publishable_api_key_sales_channel",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-1d67bae40",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-1d67bae40",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "publishable_key_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_publishable_key_id_-1d67bae40",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_publishable_key_id_-1d67bae40\" ON public.publishable_api_key_sales_channel USING btree (publishable_key_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "sales_channel_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_sales_channel_id_-1d67bae40",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_sales_channel_id_-1d67bae40\" ON public.publishable_api_key_sales_channel USING btree (sales_channel_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "publishable_key_id",
+            "sales_channel_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "publishable_api_key_sales_channel_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
         "id": {
           "name": "id",
           "type": "text",
@@ -26796,6 +30541,209 @@
     },
     {
       "columns": {
+        "region_id": {
+          "name": "region_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "payment_provider_id": {
+          "name": "payment_provider_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "region_payment_provider",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_1c934dab0",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_1c934dab0",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "payment_provider_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_payment_provider_id_1c934dab0",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_payment_provider_id_1c934dab0\" ON public.region_payment_provider USING btree (payment_provider_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "region_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_region_id_1c934dab0",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_region_id_1c934dab0\" ON public.region_payment_provider USING btree (region_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "region_id",
+            "payment_provider_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "region_payment_provider_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
         "id": {
           "name": "id",
           "type": "text",
@@ -27508,6 +31456,209 @@
           "composite": false,
           "constraint": false,
           "keyName": "return_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "return_id": {
+          "name": "return_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "fulfillment_id": {
+          "name": "fulfillment_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "return_fulfillment",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_-31ea43a",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "fulfillment_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_fulfillment_id_-31ea43a",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_fulfillment_id_-31ea43a\" ON public.return_fulfillment USING btree (fulfillment_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_-31ea43a",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "return_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_return_id_-31ea43a",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_return_id_-31ea43a\" ON public.return_fulfillment USING btree (return_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "return_id",
+            "fulfillment_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "return_fulfillment_pkey",
           "unique": true,
           "primary": true
         }
@@ -28355,6 +32506,347 @@
     },
     {
       "columns": {
+        "sales_channel_id": {
+          "name": "sales_channel_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "stock_location_id": {
+          "name": "stock_location_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "sales_channel_stock_location",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_26d06f470",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_26d06f470",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "sales_channel_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_sales_channel_id_26d06f470",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_sales_channel_id_26d06f470\" ON public.sales_channel_stock_location USING btree (sales_channel_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "stock_location_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_stock_location_id_26d06f470",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_stock_location_id_26d06f470\" ON public.sales_channel_stock_location USING btree (stock_location_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "sales_channel_id",
+            "stock_location_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "sales_channel_stock_location_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int4",
+          "unsigned": true,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "script_name": {
+          "name": "script_name",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "script_migrations",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "script_name"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "idx_script_name_unique",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "script_migrations_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
         "id": {
           "name": "id",
           "type": "text",
@@ -28898,6 +33390,209 @@
           "deleteRule": "set null"
         }
       },
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "shipping_option_id": {
+          "name": "shipping_option_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "price_set_id": {
+          "name": "price_set_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "shipping_option_price_set",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_ba32fa9c",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_ba32fa9c",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "price_set_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_price_set_id_ba32fa9c",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_price_set_id_ba32fa9c\" ON public.shipping_option_price_set USING btree (price_set_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "shipping_option_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_shipping_option_id_ba32fa9c",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_shipping_option_id_ba32fa9c\" ON public.shipping_option_price_set USING btree (shipping_option_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "shipping_option_id",
+            "price_set_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "shipping_option_price_set_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
       "nativeEnums": {
         "claim_reason_enum": {
           "name": "claim_reason_enum",
@@ -29514,6 +34209,321 @@
           "composite": false,
           "constraint": false,
           "keyName": "shipping_profile_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int8",
+          "unsigned": true,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 64,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "bigint"
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "path": {
+          "name": "path",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "referrer": {
+          "name": "referrer",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "customer_email": {
+          "name": "customer_email",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "is_logged_in": {
+          "name": "is_logged_in",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "metadata_json": {
+          "name": "metadata_json",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'{}'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "site_analytics_event",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "created_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "idx_site_analytics_created_at",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "event_type",
+            "created_at"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "idx_site_analytics_event_type_created_at",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "path",
+            "created_at"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "idx_site_analytics_path_created_at",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "session_id",
+            "created_at"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "idx_site_analytics_session_created_at",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "site_analytics_event_pkey",
           "unique": true,
           "primary": true
         }
@@ -32120,6 +37130,209 @@
           "composite": false,
           "constraint": false,
           "keyName": "user_preference_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "claim_reason_enum": {
+          "name": "claim_reason_enum",
+          "schema": "public",
+          "items": [
+            "missing_item",
+            "wrong_item",
+            "production_failure",
+            "other"
+          ]
+        },
+        "order_claim_type_enum": {
+          "name": "order_claim_type_enum",
+          "schema": "public",
+          "items": [
+            "refund",
+            "replace"
+          ]
+        },
+        "order_status_enum": {
+          "name": "order_status_enum",
+          "schema": "public",
+          "items": [
+            "pending",
+            "completed",
+            "draft",
+            "archived",
+            "canceled",
+            "requires_action"
+          ]
+        },
+        "return_status_enum": {
+          "name": "return_status_enum",
+          "schema": "public",
+          "items": [
+            "open",
+            "requested",
+            "received",
+            "partially_received",
+            "canceled"
+          ]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "rbac_role_id": {
+          "name": "rbac_role_id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "CURRENT_TIMESTAMP",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "user_rbac_role",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "deleted_at"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_deleted_at_64ff0c4c",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_id_64ff0c4c",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": [
+            "rbac_role_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_rbac_role_id_64ff0c4c",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_rbac_role_id_64ff0c4c\" ON public.user_rbac_role USING btree (rbac_role_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "user_id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "IDX_user_id_64ff0c4c",
+          "unique": false,
+          "primary": false,
+          "expression": "CREATE INDEX \"IDX_user_id_64ff0c4c\" ON public.user_rbac_role USING btree (user_id) WHERE (deleted_at IS NULL)"
+        },
+        {
+          "columnNames": [
+            "user_id",
+            "rbac_role_id"
+          ],
+          "composite": true,
+          "constraint": false,
+          "keyName": "user_rbac_role_pkey",
           "unique": true,
           "primary": true
         }

@@ -3,6 +3,7 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
+import { Client } from "pg"
 
 import {
   AI_WALLET_MODULE,
@@ -10,7 +11,6 @@ import {
   createAiWalletId,
   formatAiWallet,
   isAiWalletStorageMissing,
-  isProActive,
   sanitizeText,
 } from "../../../../lib/ai-wallet"
 
@@ -58,6 +58,249 @@ const getLedgerUnits = (ledger: any) => {
   }
 
   return Math.max(1, Math.abs(Number(ledger?.credits || 0)) || 1)
+}
+
+const isWalletProActive = (wallet?: any) => {
+  if (!wallet || !wallet.plan || wallet.plan === "free") {
+    return false
+  }
+
+  if (!wallet.plan_expires_at) {
+    return true
+  }
+
+  return new Date(wallet.plan_expires_at).getTime() > Date.now()
+}
+
+const chargeWalletWithLock = async ({
+  walletId,
+  customerId,
+  customerEmail,
+  tool,
+  usageId,
+  note,
+  units,
+}: {
+  walletId: string
+  customerId: string
+  customerEmail?: string | null
+  tool: string
+  usageId?: string | null
+  note?: string | null
+  units: number
+}) => {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required for AI wallet charging")
+  }
+
+  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  await client.connect()
+
+  try {
+    await client.query("begin")
+
+    const existingLedgerResult = usageId
+      ? await client.query(
+          `
+            select *
+            from ai_credit_ledger
+            where customer_id = $1
+              and usage_id = $2
+              and deleted_at is null
+            limit 1
+          `,
+          [customerId, usageId]
+        )
+      : { rows: [] as any[] }
+    const existingLedger = existingLedgerResult.rows[0]
+
+    const walletResult = await client.query(
+      `
+        select *
+        from ai_wallet
+        where id = $1
+          and customer_id = $2
+          and deleted_at is null
+        for update
+      `,
+      [walletId, customerId]
+    )
+    const lockedWallet = walletResult.rows[0]
+
+    if (!lockedWallet) {
+      throw new Error("AI wallet not found during locked charge")
+    }
+
+    if (existingLedger) {
+      await client.query("commit")
+
+      return {
+        allowed: true,
+        charged: existingLedger.type === "consume",
+        charged_units:
+          existingLedger.type === "consume" ? getLedgerUnits(existingLedger) : 0,
+        units: getLedgerUnits(existingLedger),
+        ledger: existingLedger,
+        wallet: lockedWallet,
+        idempotent: true,
+      }
+    }
+
+    if (isWalletProActive(lockedWallet)) {
+      const { start, end } = getIstDayWindow()
+      const proLimit = Math.max(0, Number(lockedWallet.pro_question_limit || 0))
+
+      if (proLimit > 0) {
+        const usageResult = await client.query(
+          `
+            select coalesce(sum(
+              greatest(
+                1,
+                coalesce(
+                  case
+                    when coalesce(metadata_json->>'units', '') ~ '^[0-9]+$'
+                    then (metadata_json->>'units')::integer
+                    else null
+                  end,
+                  abs(credits),
+                  1
+                )
+              )
+            ), 0)::integer as used_today
+            from ai_credit_ledger
+            where customer_id = $1
+              and type = 'premium_usage'
+              and deleted_at is null
+              and created_at >= $2
+              and created_at < $3
+          `,
+          [customerId, start, end]
+        )
+        const usedToday = Number(usageResult.rows[0]?.used_today || 0)
+
+        if (usedToday + units > proLimit) {
+          await client.query("rollback")
+
+          return {
+            allowed: false,
+            status: 402,
+            message: `Premium daily AI limit reached. You can use ${proLimit} calls per day.`,
+            premium_daily_limit: proLimit,
+            premium_used_today: usedToday,
+            requested_units: units,
+            wallet: lockedWallet,
+          }
+        }
+      }
+
+      const ledgerId = createAiCreditLedgerId()
+      const ledgerResult = await client.query(
+        `
+          insert into ai_credit_ledger (
+            id, wallet_id, customer_id, customer_email, type, source, credits,
+            balance_after, order_id, usage_id, note, metadata_json, created_at, updated_at
+          )
+          values ($1, $2, $3, $4, 'premium_usage', $5, 0, $6, null, $7, $8, $9::jsonb, now(), now())
+          returning *
+        `,
+        [
+          ledgerId,
+          lockedWallet.id,
+          customerId,
+          customerEmail,
+          tool,
+          Math.max(0, Number(lockedWallet.credit_balance || 0)),
+          usageId,
+          note,
+          JSON.stringify({
+            units,
+            billing_mode: "premium",
+            plan: lockedWallet.plan || "premium",
+            plan_expires_at: lockedWallet.plan_expires_at || null,
+            pro_question_limit: lockedWallet.pro_question_limit || 0,
+          }),
+        ]
+      )
+
+      await client.query("commit")
+
+      return {
+        allowed: true,
+        charged: false,
+        charged_units: 0,
+        premium_units: units,
+        ledger: ledgerResult.rows[0],
+        wallet: lockedWallet,
+      }
+    }
+
+    const balance = Math.max(0, Number(lockedWallet.credit_balance || 0))
+
+    if (balance < units) {
+      await client.query("rollback")
+
+      return {
+        allowed: false,
+        status: 402,
+        message: `You need ${units} AI credit${units > 1 ? "s" : ""}. Please buy credits or upgrade.`,
+        requested_units: units,
+        wallet: lockedWallet,
+      }
+    }
+
+    const nextBalance = balance - units
+    const updatedWalletResult = await client.query(
+      `
+        update ai_wallet
+        set credit_balance = $1,
+          customer_email = $2,
+          updated_at = now()
+        where id = $3
+        returning *
+      `,
+      [nextBalance, customerEmail, lockedWallet.id]
+    )
+    const ledgerResult = await client.query(
+      `
+        insert into ai_credit_ledger (
+          id, wallet_id, customer_id, customer_email, type, source, credits,
+          balance_after, order_id, usage_id, note, metadata_json, created_at, updated_at
+        )
+        values ($1, $2, $3, $4, 'consume', $5, $6, $7, null, $8, $9, $10::jsonb, now(), now())
+        returning *
+      `,
+      [
+        createAiCreditLedgerId(),
+        lockedWallet.id,
+        customerId,
+        customerEmail,
+        tool,
+        -units,
+        nextBalance,
+        usageId,
+        note,
+        JSON.stringify({
+          units,
+          billing_mode: "credit",
+        }),
+      ]
+    )
+
+    await client.query("commit")
+
+    return {
+      allowed: true,
+      charged: true,
+      charged_units: units,
+      ledger: ledgerResult.rows[0],
+      wallet: updatedWalletResult.rows[0],
+    }
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined)
+    throw error
+  } finally {
+    await client.end().catch(() => undefined)
+  }
 }
 
 const getCustomerId = (req: AuthenticatedMedusaRequest) =>
@@ -116,126 +359,26 @@ export const POST = async (
     const note = sanitizeText(req.body?.note, 240) || null
     const units = normalizeUnits(req.body?.units)
 
-    if (usageId) {
-      const [existingLedger] = await aiWalletService.listAiCreditLedgers({
-        customer_id: customerId,
-        usage_id: usageId,
-      })
-
-      if (existingLedger) {
-        return res.json({
-          allowed: true,
-          charged: existingLedger.type === "consume",
-          charged_units:
-            existingLedger.type === "consume" ? getLedgerUnits(existingLedger) : 0,
-          units: getLedgerUnits(existingLedger),
-          ledger: existingLedger,
-          wallet: formatAiWallet(wallet),
-          idempotent: true,
-        })
-      }
-    }
-
-    if (isProActive(wallet)) {
-      const { start, end } = getIstDayWindow()
-      const proLimit = Math.max(0, Number(wallet.pro_question_limit || 0))
-
-      if (proLimit > 0) {
-        const todayLedgers = await aiWalletService.listAiCreditLedgers({
-          customer_id: customerId,
-          type: "premium_usage",
-          created_at: {
-            $gte: start,
-            $lt: end,
-          },
-        })
-        const usedToday = todayLedgers.reduce(
-          (sum: number, ledger: any) => sum + getLedgerUnits(ledger),
-          0
-        )
-
-        if (usedToday + units > proLimit) {
-          return res.status(402).json({
-            allowed: false,
-            message: `Premium daily AI limit reached. You can use ${proLimit} calls per day.`,
-            premium_daily_limit: proLimit,
-            premium_used_today: usedToday,
-            requested_units: units,
-            wallet: formatAiWallet(wallet),
-          })
-        }
-      }
-
-      const ledger = await aiWalletService.createAiCreditLedgers({
-        id: createAiCreditLedgerId(),
-        wallet_id: wallet.id,
-        customer_id: customerId,
-        customer_email: customerEmail,
-        type: "premium_usage",
-        source: tool,
-        credits: 0,
-        balance_after: Math.max(0, Number(wallet.credit_balance || 0)),
-        usage_id: usageId,
-        note,
-        metadata_json: {
-          units,
-          billing_mode: "premium",
-          plan: wallet.plan || "premium",
-          plan_expires_at: wallet.plan_expires_at || null,
-          pro_question_limit: wallet.pro_question_limit || 0,
-        },
-      })
-
-      return res.json({
-        allowed: true,
-        charged: false,
-        charged_units: 0,
-        premium_units: units,
-        ledger,
-        wallet: formatAiWallet(wallet),
-      })
-    }
-
-    const balance = Math.max(0, Number(wallet.credit_balance || 0))
-
-    if (balance < units) {
-      return res.status(402).json({
-        allowed: false,
-        message: `You need ${units} AI credit${units > 1 ? "s" : ""}. Please buy credits or upgrade.`,
-        requested_units: units,
-        wallet: formatAiWallet(wallet),
-      })
-    }
-
-    const nextBalance = balance - units
-    const updatedWallet = await aiWalletService.updateAiWallets({
-      id: wallet.id,
-      credit_balance: nextBalance,
-      customer_email: customerEmail,
-    })
-    const ledger = await aiWalletService.createAiCreditLedgers({
-      id: createAiCreditLedgerId(),
-      wallet_id: wallet.id,
-      customer_id: customerId,
-      customer_email: customerEmail,
-      type: "consume",
-      source: tool,
-      credits: -units,
-      balance_after: nextBalance,
-      usage_id: usageId,
+    const charge = await chargeWalletWithLock({
+      walletId: wallet.id,
+      customerId,
+      customerEmail,
+      tool,
+      usageId,
       note,
-      metadata_json: {
-        units,
-        billing_mode: "credit",
-      },
+      units,
     })
+
+    if (charge.allowed === false) {
+      return res.status(charge.status || 402).json({
+        ...charge,
+        wallet: formatAiWallet(charge.wallet),
+      })
+    }
 
     return res.json({
-      allowed: true,
-      charged: true,
-      charged_units: units,
-      ledger,
-      wallet: formatAiWallet(updatedWallet),
+      ...charge,
+      wallet: formatAiWallet(charge.wallet),
     })
   } catch (error) {
     if (isAiWalletStorageMissing(error)) {

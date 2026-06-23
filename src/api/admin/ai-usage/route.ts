@@ -62,23 +62,52 @@ const emptyCostSummary = () => ({
   estimated_cost_inr: 0,
 })
 
+const addProviderCostOnly = (
+  summary: ReturnType<typeof emptyCostSummary>,
+  item: any
+) => {
+  summary.prompt_tokens += Math.floor(
+    parseNonNegativeNumber(item.prompt_tokens)
+  )
+  summary.completion_tokens += Math.floor(
+    parseNonNegativeNumber(item.completion_tokens)
+  )
+  summary.total_tokens +=
+    Math.floor(parseNonNegativeNumber(item.prompt_tokens)) +
+    Math.floor(parseNonNegativeNumber(item.completion_tokens))
+
+  summary.estimated_cost_usd = Number(
+    (
+      summary.estimated_cost_usd +
+      parseNonNegativeNumber(item.estimated_cost_usd)
+    ).toFixed(6)
+  )
+  summary.estimated_cost_inr = Number(
+    (
+      summary.estimated_cost_inr +
+      parseNonNegativeNumber(item.estimated_cost_inr)
+    ).toFixed(4)
+  )
+}
+
 const addUsageCost = (
   summary: ReturnType<typeof emptyCostSummary>,
   item: any
 ) => {
-  summary.sessions += 1
-
-  summary.prompt_tokens += Math.floor(
+  const promptTokens = Math.floor(
     parseNonNegativeNumber(item.prompt_tokens)
   )
-
-  summary.completion_tokens += Math.floor(
+  const completionTokens = Math.floor(
     parseNonNegativeNumber(item.completion_tokens)
   )
 
-  summary.total_tokens += Math.floor(
-    parseNonNegativeNumber(item.total_tokens)
-  )
+  summary.sessions += 1
+
+  summary.prompt_tokens += promptTokens
+
+  summary.completion_tokens += completionTokens
+
+  summary.total_tokens += promptTokens + completionTokens
 
   summary.estimated_cost_usd = Number(
     (
@@ -109,17 +138,25 @@ const getBillingBucket = (item: any) => {
     return "paid"
   }
 
-  if (["free", "daily_free"].includes(mode)) {
+  if (["free", "daily_free", "lifetime_free"].includes(mode)) {
     return "free"
   }
 
   return "unclassified"
 }
 
+const isProviderInvoiceRow = (item: any) =>
+  item?.tool === "provider_billing_invoice" ||
+  item?.metadata_json?.billing_mode === "provider_invoice"
+
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
+  res.setHeader("Pragma", "no-cache")
+  res.setHeader("Expires", "0")
+
   if (!isAuthenticatedAdminRequest(req)) {
     return res.status(401).json({
       usage: [],
@@ -146,6 +183,17 @@ export const GET = async (
 
   const createdFrom = toValidDate(createdFromRaw)
   const createdTo = toValidDate(createdToRaw)
+  const providerBillingView = tool === "provider_billing_invoice"
+  const includeProviderInvoiceInSummary =
+    !providerBillingView &&
+    !customerId &&
+    !customerEmail &&
+    !tool &&
+    !toolPrefix &&
+    !adminStatus &&
+    typeof expertRecommended !== "boolean" &&
+    !createdFrom &&
+    !createdTo
 
   if (customerId) {
     filters.customer_id = customerId
@@ -159,6 +207,8 @@ export const GET = async (
     filters.tool = tool
   } else if (toolPrefix) {
     filters.tool = { $like: `${toolPrefix}%` }
+  } else {
+    filters.tool = { $ne: "provider_billing_invoice" }
   }
 
   if (adminStatus) {
@@ -197,8 +247,28 @@ export const GET = async (
       },
     })
 
+    const providerInvoiceRows = includeProviderInvoiceInSummary
+      ? await aiUsageService.listAiUsageLogs(
+          {
+            tool: "provider_billing_invoice",
+          },
+          {
+            take: 5000,
+            order: {
+              created_at: "DESC",
+            },
+          }
+        )
+      : []
+
     const summary = summaryRows.reduce(
       (acc: any, item: any) => {
+        if (isProviderInvoiceRow(item)) {
+          addUsageCost(acc.invoice, item)
+          addProviderCostOnly(acc, item)
+          return acc
+        }
+
         addUsageCost(acc, item)
 
         const bucket = getBillingBucket(item)
@@ -211,13 +281,23 @@ export const GET = async (
         free: emptyCostSummary(),
         paid: emptyCostSummary(),
         unclassified: emptyCostSummary(),
+        invoice: emptyCostSummary(),
       }
     )
+
+    providerInvoiceRows.forEach((item: any) => {
+      addUsageCost(summary.invoice, item)
+      addProviderCostOnly(summary, item)
+    })
 
     return res.json({
       synced: true,
       usage: usage.map((item: any) => ({
         ...formatAiUsageLog(item),
+        total_tokens:
+          Math.floor(parseNonNegativeNumber(item.prompt_tokens)) +
+          Math.floor(parseNonNegativeNumber(item.completion_tokens)),
+        raw_total_tokens: Math.floor(parseNonNegativeNumber(item.total_tokens)),
         input_preview: previewJson(item.input_json),
         response_preview: previewJson(item.response_json),
       })),

@@ -37,6 +37,10 @@ export const GET = async (
   req: AuthenticatedMedusaRequest<unknown, { id: string }>,
   res: MedusaResponse
 ) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
+  res.setHeader("Pragma", "no-cache")
+  res.setHeader("Expires", "0")
+
   if (!isAuthenticatedAdminRequest(req)) {
     return res.status(401).json({
       message: "Unauthorized admin request",

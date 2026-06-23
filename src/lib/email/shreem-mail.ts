@@ -386,3 +386,121 @@ export const buildOrderStatusEmail = ({
     actionLabel,
     note,
   })
+
+const escapeHtml = (value: unknown) =>
+  String(value ?? "").replace(/[&<>"']/g, (char) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    }
+
+    return entities[char] || char
+  })
+
+export const buildStakeholderOrderEmail = ({
+  order,
+  adminOrderUrl,
+  storefrontOrderUrl,
+}: {
+  order: any
+  adminOrderUrl: string
+  storefrontOrderUrl: string
+}) => {
+  const displayId = order?.display_id ? `#${order.display_id}` : order?.id || "new order"
+  const items = Array.isArray(order?.items) ? order.items : []
+  const itemLines = items
+    .map((item: any) => {
+      const quantity = item?.quantity || 1
+      const title = item?.title || item?.product_title || "Item"
+
+      return `${quantity} x ${title}`
+    })
+    .join("\n")
+  const itemRows = items
+    .map((item: any) => {
+      const quantity = item?.quantity || 1
+      const title = item?.title || item?.product_title || "Item"
+
+      return `<tr><td style="padding:10px;border-bottom:1px solid #eadfcb">${escapeHtml(
+        title
+      )}</td><td style="padding:10px;border-bottom:1px solid #eadfcb;text-align:right">${escapeHtml(
+        quantity
+      )}</td></tr>`
+    })
+    .join("")
+  const shippingAddress = order?.shipping_address
+  const address = shippingAddress
+    ? [
+        `${shippingAddress.first_name || ""} ${shippingAddress.last_name || ""}`.trim(),
+        shippingAddress.address_1,
+        shippingAddress.address_2,
+        shippingAddress.city,
+        shippingAddress.province,
+        shippingAddress.postal_code,
+        shippingAddress.country_code,
+        shippingAddress.phone,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "No shipping address found."
+  const rawTotal = Number(order?.total || 0)
+  const currency = String(order?.currency_code || "INR").toUpperCase()
+  const total = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+  }).format(rawTotal / 100)
+
+  const text = `New Shreem order ${displayId}
+
+Customer: ${order?.email || "No email"}
+Total: ${total}
+Items:
+${itemLines || "No items found"}
+
+Shipping:
+${address}
+
+Admin order: ${adminOrderUrl}
+Customer order: ${storefrontOrderUrl}
+`
+
+  const html = `
+    <div style="margin:0;background:#f5efdf;padding:32px 14px;font-family:Arial,Helvetica,sans-serif;color:#092636">
+      <div style="max-width:720px;margin:0 auto;background:#fffdf7;border:1px solid #ead7a7;border-radius:24px;overflow:hidden">
+        <div style="padding:26px;background:linear-gradient(135deg,#083848 0%,#0d817e 62%,#5a341b 100%);color:#fff">
+          <p style="margin:0 0 8px;letter-spacing:.22em;text-transform:uppercase;color:#f6d36b;font-size:11px;font-weight:700">New Shreem order</p>
+          <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px">${escapeHtml(
+            displayId
+          )}</h1>
+        </div>
+        <div style="padding:26px">
+          <p style="margin:0 0 10px;font-size:15px;line-height:1.6"><strong>Customer:</strong> ${escapeHtml(
+            order?.email || "No email"
+          )}</p>
+          <p style="margin:0 0 18px;font-size:15px;line-height:1.6"><strong>Total:</strong> ${escapeHtml(
+            total
+          )}</p>
+          <h2 style="font-size:16px;margin:24px 0 8px;color:#7a5412">Items</h2>
+          <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #eadfcb">
+            <thead><tr><th style="padding:10px;text-align:left;background:#fff4d8;color:#7a5412">Item</th><th style="padding:10px;text-align:right;background:#fff4d8;color:#7a5412">Qty</th></tr></thead>
+            <tbody>${itemRows || `<tr><td colspan="2" style="padding:10px">No items found.</td></tr>`}</tbody>
+          </table>
+          <h2 style="font-size:16px;margin:24px 0 8px;color:#7a5412">Shipping</h2>
+          <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#385965">${escapeHtml(
+            address
+          )}</p>
+          <a href="${adminOrderUrl}" style="display:inline-block;background:linear-gradient(135deg,#0d817e,#123f63);color:#fff;text-decoration:none;padding:13px 20px;border-radius:999px;font-weight:700">Open order in admin</a>
+          <p style="margin:18px 0 0;font-size:12px;color:#60737b">Customer order URL: <a href="${storefrontOrderUrl}">${storefrontOrderUrl}</a></p>
+        </div>
+      </div>
+    </div>`
+
+  return {
+    subject: `New Shreem order ${displayId}`,
+    text,
+    html,
+  }
+}

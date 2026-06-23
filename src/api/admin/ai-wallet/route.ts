@@ -1,5 +1,11 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { Client } from "pg"
+
+import {
+  AI_WALLET_MODULE,
+  formatAiWallet,
+  getAiCreditPacks,
+  isAiWalletStorageMissing,
+} from "../../../lib/ai-wallet"
 
 const parseLimit = (value: unknown, fallback = 50) => {
   const parsed = Number(value || fallback)
@@ -11,123 +17,100 @@ const parseOffset = (value: unknown, fallback = 0) => {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback
 }
 
-const parseIntSafe = (value: unknown) => {
-  const parsed = Number(value || 0)
-  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0
-}
-
 const sanitizeText = (value: unknown, max = 240) =>
   typeof value === "string" ? value.trim().slice(0, max) : ""
 
-const formatWallet = (wallet: any) => ({
-  id: wallet.id,
-  customer_id: wallet.customer_id,
-  customer_email: wallet.customer_email,
-  credit_balance: parseIntSafe(wallet.credit_balance),
-  plan: wallet.plan || "free",
-  plan_expires_at: wallet.plan_expires_at || null,
-  pro_question_limit: parseIntSafe(wallet.pro_question_limit),
-  metadata_json: wallet.metadata_json || {},
-  created_at: wallet.created_at,
-  updated_at: wallet.updated_at,
-})
+const setNoStoreHeaders = (res: MedusaResponse) => {
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate"
+  )
+  res.setHeader("Pragma", "no-cache")
+  res.setHeader("Expires", "0")
+  res.setHeader("Surrogate-Control", "no-store")
+}
 
-const getDatabaseUrl = () => {
-  const databaseUrl = process.env.DATABASE_URL
+const parseCreditBalance = (wallet: any) =>
+  Math.max(0, Math.trunc(Number(wallet?.credit_balance || 0) || 0))
 
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is missing")
+const walletMatchesSearch = (wallet: any, search: string) => {
+  if (!search) {
+    return true
   }
 
-  return databaseUrl
+  const needle = search.toLowerCase()
+
+  return [wallet.customer_email, wallet.customer_id, wallet.id]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(needle))
 }
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
+  setNoStoreHeaders(res)
+
   const limit = parseLimit(req.query.limit)
   const offset = parseOffset(req.query.offset)
-  const customerEmail = sanitizeText(req.query.customer_email)
-
-  const client = new Client({
-    connectionString: getDatabaseUrl(),
-  })
+  const customerSearch = sanitizeText(req.query.customer_email)
+  const aiWalletService = req.scope.resolve(AI_WALLET_MODULE) as any
 
   try {
-    await client.connect()
-
-    const filterParams: any[] = []
-    let where = "where deleted_at is null"
-
-    if (customerEmail) {
-      filterParams.push(customerEmail)
-      where += ` and lower(customer_email) = lower($${filterParams.length})`
-    }
-
-    const walletParams = [...filterParams, limit, offset]
-    const limitParam = filterParams.length + 1
-    const offsetParam = filterParams.length + 2
-
-    const walletsResult = await client.query(
-      `
-        select
-          id,
-          customer_id,
-          customer_email,
-          credit_balance,
-          plan,
-          plan_expires_at,
-          pro_question_limit,
-          metadata_json,
-          created_at,
-          updated_at
-        from ai_wallet
-        ${where}
-        order by updated_at desc nulls last, created_at desc nulls last
-        limit $${limitParam}
-        offset $${offsetParam}
-      `,
-      walletParams
+    const allWallets = await aiWalletService.listAiWallets(
+      {},
+      { take: 1000, order: { updated_at: "DESC" } }
     )
-
-    const countResult = await client.query(
-      `
-        select count(*)::integer as count
-        from ai_wallet
-        ${where}
-      `,
-      filterParams
+    const filteredWallets = allWallets.filter((wallet: any) =>
+      walletMatchesSearch(wallet, customerSearch)
     )
+    const pageWallets = filteredWallets.slice(offset, offset + limit)
+    const wallets = await Promise.all(
+      pageWallets.map(async (wallet: any) => {
+        const ledger = await aiWalletService.listAiCreditLedgers(
+          { wallet_id: wallet.id },
+          { take: 100, order: { created_at: "DESC" } }
+        )
 
-    const summaryResult = await client.query(
-      `
-        select
-          count(*)::integer as wallets,
-          coalesce(sum(greatest(0, credit_balance)), 0)::integer as total_credits,
-          count(*) filter (where plan is not null and plan <> 'free')::integer as premium_wallets
-        from ai_wallet
-        ${where}
-      `,
-      filterParams
+        return formatAiWallet(wallet, ledger)
+      })
     )
-
-    const wallets = walletsResult.rows.map(formatWallet)
-    const summary = summaryResult.rows[0] || {
-      wallets: 0,
-      total_credits: 0,
-      premium_wallets: 0,
-    }
+    const totalCredits = filteredWallets.reduce(
+      (total: number, wallet: any) => total + parseCreditBalance(wallet),
+      0
+    )
+    const premiumWallets = filteredWallets.filter(
+      (wallet: any) => wallet.plan && wallet.plan !== "free"
+    ).length
 
     return res.json({
       wallets,
-      count: Number(countResult.rows[0]?.count || wallets.length),
+      count: filteredWallets.length,
       limit,
       offset,
       summary: {
-        wallets: parseIntSafe(summary.wallets),
-        total_credits: parseIntSafe(summary.total_credits),
-        premium_wallets: parseIntSafe(summary.premium_wallets),
+        wallets: filteredWallets.length,
+        total_credits: totalCredits,
+        premium_wallets: premiumWallets,
       },
+      packs: getAiCreditPacks(),
     })
   } catch (error: any) {
+    if (isAiWalletStorageMissing(error)) {
+      return res.json({
+        setup_required: true,
+        message:
+          "AI wallet storage is not ready yet. Run backend database migrations.",
+        wallets: [],
+        count: 0,
+        limit,
+        offset,
+        summary: {
+          wallets: 0,
+          total_credits: 0,
+          premium_wallets: 0,
+        },
+        packs: getAiCreditPacks(),
+      })
+    }
+
     console.error("[admin-ai-wallet] failed to list wallets", {
       message: error?.message,
       stack: error?.stack,
@@ -145,8 +128,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         total_credits: 0,
         premium_wallets: 0,
       },
+      packs: getAiCreditPacks(),
     })
-  } finally {
-    await client.end().catch(() => undefined)
   }
 }
