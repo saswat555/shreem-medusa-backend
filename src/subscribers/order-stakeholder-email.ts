@@ -2,6 +2,7 @@ import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 
 import { getMailSettings } from "../lib/admin-mail-settings"
 import {
+  buildCustomerOrderPlacedEmail,
   buildStakeholderOrderEmail,
   sendShreemEmail,
 } from "../lib/email/shreem-mail"
@@ -39,18 +40,7 @@ export default async function orderStakeholderEmailHandler({
   try {
     const settings = await getMailSettings()
 
-    if (settings.order_stakeholder_enabled === false) {
-      return
-    }
-
     const recipients = settings.order_stakeholder_recipients || []
-
-    if (!recipients.length) {
-      console.warn("[order-stakeholder-email] no recipients configured", {
-        order_id: orderId,
-      })
-      return
-    }
 
     const query = container.resolve("query") as any
     const { data } = await query.graph({
@@ -89,33 +79,65 @@ export default async function orderStakeholderEmailHandler({
     const displayId = order.display_id ? String(order.display_id) : order.id
     const adminOrderUrl = `${getAdminUrl()}/app/orders/${order.id}`
     const storefrontOrderUrl = `${getSiteUrl()}/in/order/${order.id}/confirmed`
-    const email = buildStakeholderOrderEmail({
-      order,
-      adminOrderUrl,
-      storefrontOrderUrl,
-    })
 
-    await Promise.allSettled(
-      recipients.map((to) =>
+    const jobs: Promise<unknown>[] = []
+
+    if (settings.order_stakeholder_enabled !== false) {
+      if (!recipients.length) {
+        console.warn("[order-stakeholder-email] no recipients configured", {
+          order_id: orderId,
+        })
+      } else {
+        const email = buildStakeholderOrderEmail({
+          order,
+          adminOrderUrl,
+          storefrontOrderUrl,
+        })
+
+        jobs.push(
+          ...recipients.map((to) =>
+            sendShreemEmail({
+              to,
+              subject: email.subject,
+              text: email.text,
+              html: email.html,
+            })
+          )
+        )
+      }
+    }
+
+    if (settings.customer_order_enabled !== false && order.email) {
+      const customerEmail = buildCustomerOrderPlacedEmail({
+        order,
+        orderUrl: storefrontOrderUrl,
+      })
+
+      jobs.push(
         sendShreemEmail({
-          to,
-          subject: email.subject,
-          text: email.text,
-          html: email.html,
+          to: order.email,
+          subject: `Shreem Farms payment received for order #${displayId}`,
+          text: customerEmail.text,
+          html: customerEmail.html,
         })
       )
-    ).then((results) => {
-      const failed = results.filter((result) => result.status === "rejected")
+    }
 
-      if (failed.length) {
-        console.warn("[order-stakeholder-email] some emails failed", {
-          order_id: order.id,
-          display_id: displayId,
-          failed: failed.length,
-          recipients,
-        })
-      }
-    })
+    if (jobs.length) {
+      await Promise.allSettled(jobs).then((results) => {
+        const failed = results.filter((result) => result.status === "rejected")
+
+        if (failed.length) {
+          console.warn("[order-stakeholder-email] some emails failed", {
+            order_id: order.id,
+            display_id: displayId,
+            failed: failed.length,
+            total: jobs.length,
+            recipients,
+          })
+        }
+      })
+    }
   } catch (error) {
     console.error("[order-stakeholder-email] failed safely", {
       order_id: orderId,

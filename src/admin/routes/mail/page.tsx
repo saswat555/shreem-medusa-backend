@@ -29,6 +29,9 @@ const MailPage = () => {
   )
   const [orderNotificationsEnabled, setOrderNotificationsEnabled] =
     useState(true)
+  const [customerOrderEmailsEnabled, setCustomerOrderEmailsEnabled] =
+    useState(true)
+  const [aiWalletEmailsEnabled, setAiWalletEmailsEnabled] = useState(true)
 
   const loadSettings = async () => {
     setSettingsLoading(true)
@@ -37,6 +40,8 @@ const MailPage = () => {
       const response = await sdk.client.fetch<{
         order_stakeholder_recipients?: string[]
         order_stakeholder_enabled?: boolean
+        customer_order_enabled?: boolean
+        ai_wallet_enabled?: boolean
       }>("/admin/mail/settings", {
         method: "GET",
         cache: "no-store",
@@ -48,6 +53,8 @@ const MailPage = () => {
       setOrderNotificationsEnabled(
         response.order_stakeholder_enabled !== false
       )
+      setCustomerOrderEmailsEnabled(response.customer_order_enabled !== false)
+      setAiWalletEmailsEnabled(response.ai_wallet_enabled !== false)
     } catch (error) {
       setSettingsResult({
         ok: false,
@@ -105,6 +112,8 @@ const MailPage = () => {
         body: {
           order_stakeholder_recipients: orderRecipients,
           order_stakeholder_enabled: orderNotificationsEnabled,
+          customer_order_enabled: customerOrderEmailsEnabled,
+          ai_wallet_enabled: aiWalletEmailsEnabled,
         },
       })
 
@@ -141,7 +150,8 @@ const MailPage = () => {
           <Heading level="h2">Order stakeholder notifications</Heading>
           <Text className="text-ui-fg-subtle">
             Every new order sends a non-blocking internal email to these
-            stakeholders. One email per line or comma separated.
+            stakeholders. Customer payment and AI wallet emails can be toggled
+            here too. One email per line or comma separated.
           </Text>
         </div>
 
@@ -155,6 +165,32 @@ const MailPage = () => {
           <Switch
             checked={orderNotificationsEnabled}
             onCheckedChange={setOrderNotificationsEnabled}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+          <div>
+            <Label>Enable customer payment emails</Label>
+            <Text className="text-ui-fg-subtle">
+              Sends the customer a payment received email after order placement.
+            </Text>
+          </div>
+          <Switch
+            checked={customerOrderEmailsEnabled}
+            onCheckedChange={setCustomerOrderEmailsEnabled}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+          <div>
+            <Label>Enable AI wallet emails</Label>
+            <Text className="text-ui-fg-subtle">
+              Sends the customer a credit recharge or monthly plan activation email.
+            </Text>
+          </div>
+          <Switch
+            checked={aiWalletEmailsEnabled}
+            onCheckedChange={setAiWalletEmailsEnabled}
           />
         </div>
 

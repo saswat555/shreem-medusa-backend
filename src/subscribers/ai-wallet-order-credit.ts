@@ -7,6 +7,11 @@ import {
   getAiCreditPackByHandleAndSku,
   parseNonNegativeInt,
 } from "../lib/ai-wallet"
+import { getMailSettings } from "../lib/admin-mail-settings"
+import {
+  buildAiWalletActivatedEmail,
+  sendShreemEmail,
+} from "../lib/email/shreem-mail"
 import { Client } from "pg"
 
 type OrderEvent = {
@@ -17,6 +22,11 @@ type OrderEvent = {
 const getOrderId = (data: OrderEvent) => data.id || data.order_id || ""
 
 const getDatabaseUrl = () => process.env.DATABASE_URL || ""
+const getSiteUrl = () =>
+  String(process.env.SHREEM_SITE_URL || "https://shreemfarms.in").replace(
+    /\/+$/,
+    ""
+  )
 
 const toQuantity = (value: unknown) => Math.max(1, parseNonNegativeInt(value, 1))
 
@@ -166,7 +176,7 @@ const attachRecoveredCartLedger = async ({
       `
         update ai_credit_ledger
         set
-          order_id = $2,
+          order_id = $2::text,
           note = coalesce(note, '') || ' · Linked to repaired Medusa order.',
           metadata_json = coalesce(metadata_json, '{}'::jsonb) || jsonb_build_object(
             'repaired_order_id', $2::text,
@@ -387,6 +397,38 @@ export default async function aiWalletOrderCreditHandler({
       fulfillment_type: "digital",
     },
   })
+
+  if (order.email) {
+    try {
+      const settings = await getMailSettings()
+
+      if (settings.ai_wallet_enabled !== false) {
+        const accountUrl = `${getSiteUrl()}/in/account`
+        const email = buildAiWalletActivatedEmail({
+          credits: parseNonNegativeInt(grant.credits),
+          balance: nextBalance,
+          plan: updatedWallet.plan,
+          planExpiresAt: updatedWallet.plan_expires_at,
+          accountUrl,
+        })
+
+        await sendShreemEmail({
+          to: order.email,
+          subject: grant.premium
+            ? "Your Shreem AI Jyotish plan is active"
+            : "Your Shreem AI credits are ready",
+          text: email.text,
+          html: email.html,
+        })
+      }
+    } catch (error: any) {
+      console.warn("[ai-wallet-order-credit] wallet email failed safely", {
+        order_id: order.id,
+        customer_email: order.email,
+        message: error?.message || String(error),
+      })
+    }
+  }
 }
 
 export const config: SubscriberConfig = {

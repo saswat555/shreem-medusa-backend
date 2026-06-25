@@ -527,14 +527,14 @@ const AiWalletPage = () => {
                         {item.order_id ? ` · Order ${item.order_id}` : ""}
                         {item.usage_id ? ` · Usage ${item.usage_id}` : ""}
                       </Text>
-                      {item.metadata?.razorpay_order_id && (
+                      {Boolean(item.metadata?.razorpay_order_id) && (
                         <Text className="text-ui-fg-muted mt-1 text-xs">
-                          Razorpay order: {String(item.metadata.razorpay_order_id)}
+                          Razorpay order: {String(item.metadata?.razorpay_order_id)}
                         </Text>
                       )}
-                      {item.metadata?.razorpay_payment_id && (
+                      {Boolean(item.metadata?.razorpay_payment_id) && (
                         <Text className="text-ui-fg-muted mt-1 text-xs">
-                          Razorpay payment: {String(item.metadata.razorpay_payment_id)}
+                          Razorpay payment: {String(item.metadata?.razorpay_payment_id)}
                         </Text>
                       )}
                       {item.metadata &&

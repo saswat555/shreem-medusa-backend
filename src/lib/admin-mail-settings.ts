@@ -36,6 +36,8 @@ const ensureMailSettingsTable = async (client: Client) => {
       id text PRIMARY KEY DEFAULT 'default',
       order_stakeholder_recipients text NOT NULL DEFAULT '',
       order_stakeholder_enabled boolean NOT NULL DEFAULT true,
+      customer_order_enabled boolean NOT NULL DEFAULT true,
+      ai_wallet_enabled boolean NOT NULL DEFAULT true,
       updated_at timestamptz NOT NULL DEFAULT now()
     )
   `)
@@ -44,6 +46,8 @@ const ensureMailSettingsTable = async (client: Client) => {
     ALTER TABLE admin_mail_settings
       ADD COLUMN IF NOT EXISTS order_stakeholder_recipients text NOT NULL DEFAULT '',
       ADD COLUMN IF NOT EXISTS order_stakeholder_enabled boolean NOT NULL DEFAULT true,
+      ADD COLUMN IF NOT EXISTS customer_order_enabled boolean NOT NULL DEFAULT true,
+      ADD COLUMN IF NOT EXISTS ai_wallet_enabled boolean NOT NULL DEFAULT true,
       ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()
   `)
 }
@@ -73,6 +77,14 @@ export const getMailSettings = async () => {
         row?.order_stakeholder_enabled === undefined
           ? true
           : Boolean(row.order_stakeholder_enabled),
+      customer_order_enabled:
+        row?.customer_order_enabled === undefined
+          ? true
+          : Boolean(row.customer_order_enabled),
+      ai_wallet_enabled:
+        row?.ai_wallet_enabled === undefined
+          ? true
+          : Boolean(row.ai_wallet_enabled),
       updated_at: row?.updated_at || null,
     }
   } finally {
@@ -83,6 +95,8 @@ export const getMailSettings = async () => {
 export const saveMailSettings = async (input: {
   order_stakeholder_recipients?: string[] | string
   order_stakeholder_enabled?: boolean
+  customer_order_enabled?: boolean
+  ai_wallet_enabled?: boolean
 }) => {
   const client = getClient()
   const recipients = Array.isArray(input.order_stakeholder_recipients)
@@ -104,15 +118,24 @@ export const saveMailSettings = async (input: {
         id,
         order_stakeholder_recipients,
         order_stakeholder_enabled,
+        customer_order_enabled,
+        ai_wallet_enabled,
         updated_at
       )
-      VALUES ('default', $1, $2, now())
+      VALUES ('default', $1, $2, $3, $4, now())
       ON CONFLICT (id) DO UPDATE SET
         order_stakeholder_recipients = EXCLUDED.order_stakeholder_recipients,
         order_stakeholder_enabled = EXCLUDED.order_stakeholder_enabled,
+        customer_order_enabled = EXCLUDED.customer_order_enabled,
+        ai_wallet_enabled = EXCLUDED.ai_wallet_enabled,
         updated_at = now()
       `,
-      [recipients.join(","), input.order_stakeholder_enabled !== false]
+      [
+        recipients.join(","),
+        input.order_stakeholder_enabled !== false,
+        input.customer_order_enabled !== false,
+        input.ai_wallet_enabled !== false,
+      ]
     )
 
     return getMailSettings()

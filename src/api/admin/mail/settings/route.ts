@@ -50,6 +50,8 @@ export const POST = async (
   req: AuthenticatedMedusaRequest<{
     order_stakeholder_recipients?: string[] | string
     order_stakeholder_enabled?: boolean
+    customer_order_enabled?: boolean
+    ai_wallet_enabled?: boolean
   }>,
   res: MedusaResponse
 ) => {

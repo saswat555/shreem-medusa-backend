@@ -17,6 +17,9 @@ const redisUrl = process.env.REDIS_URL
 const projectRoot = isBuiltServer ? path.resolve(cwd, "../..") : cwd
 const adminCacheVersion =
   process.env.SHREEM_ADMIN_CACHE_VERSION || "2026-06-23-ai-wallet-cache-v2"
+const shouldDisableBundledAdmin =
+  process.env.MEDUSA_ADMIN_DISABLED === "true" ||
+  process.env.SHREEM_DISABLE_BUNDLED_ADMIN === "true"
 
 const readRootEnvValue = (key: string) => {
   try {
@@ -274,6 +277,7 @@ export default defineConfig({
   },
 
   admin: {
+    disable: shouldDisableBundledAdmin,
     vite: () => ({
       plugins: [adminSessionGuardPlugin()],
       server: {

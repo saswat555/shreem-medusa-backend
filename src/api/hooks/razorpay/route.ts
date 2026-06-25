@@ -229,10 +229,10 @@ const markPaymentCaptured = async ({
           updated_at
         )
         select
-          $1,
-          $2,
-          $3,
-          $4,
+          $1::text,
+          $2::numeric,
+          $3::jsonb,
+          $4::text,
           jsonb_build_object(
             'source', 'razorpay_webhook',
             'razorpay_payment_id', $5::text
@@ -242,7 +242,7 @@ const markPaymentCaptured = async ({
         where not exists (
           select 1
           from capture
-          where payment_id = $4
+          where payment_id = $4::text
             and deleted_at is null
         )
       `,
@@ -310,22 +310,22 @@ const markPaymentCaptured = async ({
         updated_at
       )
       select
-        $1,
-        $2,
-        $3,
-        $4,
-        $5,
-        $6,
+        $1::text,
+        $2::text,
+        $3::integer,
+        $4::numeric,
+        $5::jsonb,
+        $6::text,
         'capture',
-        $7,
+        $7::text,
         now(),
         now()
       where not exists (
         select 1
         from order_transaction
-        where order_id = $2
+        where order_id = $2::text
           and reference = 'capture'
-          and reference_id = $7
+          and reference_id = $7::text
           and deleted_at is null
       )
     `,

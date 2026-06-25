@@ -387,6 +387,72 @@ export const buildOrderStatusEmail = ({
     note,
   })
 
+export const buildCustomerOrderPlacedEmail = ({
+  order,
+  orderUrl,
+}: {
+  order: any
+  orderUrl: string
+}) => {
+  const displayId = order?.display_id ? `#${order.display_id}` : order?.id || "your order"
+  const rawTotal = Number(order?.total || 0)
+  const currency = String(order?.currency_code || "INR").toUpperCase()
+  const total = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+  }).format(rawTotal / 100)
+  const items = Array.isArray(order?.items) ? order.items : []
+  const itemSummary = items
+    .map((item: any) => `${item?.quantity || 1} x ${item?.title || item?.product_title || "Item"}`)
+    .join(", ")
+
+  return baseEmail({
+    title: `Payment received for ${displayId}`,
+    intro: `Thank you for ordering from Shreem Farms. We have received your payment of ${total}. ${
+      itemSummary ? `Your order contains ${itemSummary}. ` : ""
+    }You can track the order from your account.`,
+    actionUrl: orderUrl,
+    actionLabel: "Open order",
+    note:
+      "For physical products, dispatch details will be updated after packing. Digital AI credits and plans are activated automatically after successful order completion.",
+  })
+}
+
+export const buildAiWalletActivatedEmail = ({
+  credits,
+  balance,
+  plan,
+  planExpiresAt,
+  accountUrl,
+}: {
+  credits: number
+  balance: number
+  plan?: string | null
+  planExpiresAt?: string | Date | null
+  accountUrl: string
+}) => {
+  const hasPlan = Boolean(plan && plan !== "free")
+  const expiry = planExpiresAt
+    ? new Intl.DateTimeFormat("en-IN", {
+        dateStyle: "medium",
+        timeZone: "Asia/Kolkata",
+      }).format(new Date(planExpiresAt))
+    : ""
+
+  return baseEmail({
+    title: hasPlan ? "Your Shreem AI plan is active" : "Your AI credits are ready",
+    intro: hasPlan
+      ? `Your ${plan} AI Jyotish plan is active${expiry ? ` until ${expiry}` : ""}. ${
+          credits ? `${credits} credits were also added. ` : ""
+        }Your current wallet balance is ${balance} credits.`
+      : `${credits} AI Jyotish credit${credits === 1 ? "" : "s"} were added to your wallet. Your current balance is ${balance} credits.`,
+    actionUrl: accountUrl,
+    actionLabel: "Open AI wallet",
+    note:
+      "Credits are consumed only after a successful AI reading. Failed AI generations should not reduce the wallet balance.",
+  })
+}
+
 const escapeHtml = (value: unknown) =>
   String(value ?? "").replace(/[&<>"']/g, (char) => {
     const entities: Record<string, string> = {
