@@ -5,7 +5,7 @@ type SaveImageInput = {
   fileName?: unknown
   mimeType?: unknown
   contentBase64?: unknown
-  directory: "blog" | "payment"
+  directory: "blog" | "payment" | "gemstones"
   fixedBaseName?: string
 }
 

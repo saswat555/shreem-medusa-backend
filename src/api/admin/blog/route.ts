@@ -25,9 +25,14 @@ export const GET = async (
   }
 
   const posts = await listJournalPosts()
+  const published = posts.filter((post) => post.status === "published").length
+  const draft = posts.filter((post) => post.status === "draft").length
 
   return res.json({
     posts: posts.map(formatJournalPost),
+    count: posts.length,
+    published,
+    draft,
   })
 }
 

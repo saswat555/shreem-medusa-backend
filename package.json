@@ -18,6 +18,8 @@
     "seed": "medusa exec ./src/scripts/seed.ts",
     "blog:generate": "node scripts/generate-blog-post.cjs",
     "blog:fix-images": "node scripts/normalize-blog-images.cjs",
+    "blog:clean-growth": "node scripts/clean-blog-posts-for-growth.cjs",
+    "blog:clean-growth:apply": "node scripts/clean-blog-posts-for-growth.cjs --apply",
     "start": "medusa start",
     "start:prod": "NODE_ENV=production medusa start",
     "dev": "medusa develop",

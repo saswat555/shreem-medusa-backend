@@ -22,6 +22,35 @@ export type JournalPost = {
   status: "draft" | "published"
   author_name: string
   publishedAt: string
+  seoTitle?: string
+  metaTitle?: string
+  metaDescription?: string
+  targetKeyword?: string
+  relatedKeywords?: string[]
+  searchIntent?: string
+  focusedProduct?: {
+    name: string
+    href: string
+    handle?: string
+    category?: string
+  }
+  productCta?: {
+    midArticle?: string
+    final?: string
+  }
+  faq?: {
+    question: string
+    answer: string
+  }[]
+  imageAltSuggestions?: string[]
+  internalLinkingSuggestions?: {
+    label: string
+    href: string
+    reason?: string
+  }[]
+  socialCaption?: string
+  suggestedNextTopics?: string[]
+  metadata?: Record<string, unknown>
   sections: JournalSection[]
   relatedLinks?: {
     label: string
@@ -178,7 +207,22 @@ export const createJournalPost = async (input: CreateJournalPostInput) => {
       0,
       10
     ),
+    seoTitle: input.seoTitle,
+    metaTitle: input.metaTitle,
+    metaDescription: input.metaDescription,
+    targetKeyword: input.targetKeyword,
+    relatedKeywords: input.relatedKeywords,
+    searchIntent: input.searchIntent,
+    focusedProduct: input.focusedProduct,
+    productCta: input.productCta,
+    faq: input.faq,
+    imageAltSuggestions: input.imageAltSuggestions,
+    internalLinkingSuggestions: input.internalLinkingSuggestions,
+    socialCaption: input.socialCaption,
+    suggestedNextTopics: input.suggestedNextTopics,
+    metadata: input.metadata,
     sections: buildSections(input),
+    relatedLinks: input.relatedLinks,
     created_at: now,
     updated_at: now,
   }
@@ -286,6 +330,57 @@ export const updateJournalPost = async (
         ? String(input.published_at || input.publishedAt || new Date().toISOString())
             .slice(0, 10)
         : existing.publishedAt,
+    seoTitle:
+      typeof input.seoTitle !== "undefined" ? input.seoTitle : existing.seoTitle,
+    metaTitle:
+      typeof input.metaTitle !== "undefined" ? input.metaTitle : existing.metaTitle,
+    metaDescription:
+      typeof input.metaDescription !== "undefined"
+        ? input.metaDescription
+        : existing.metaDescription,
+    targetKeyword:
+      typeof input.targetKeyword !== "undefined"
+        ? input.targetKeyword
+        : existing.targetKeyword,
+    relatedKeywords:
+      typeof input.relatedKeywords !== "undefined"
+        ? input.relatedKeywords
+        : existing.relatedKeywords,
+    searchIntent:
+      typeof input.searchIntent !== "undefined"
+        ? input.searchIntent
+        : existing.searchIntent,
+    focusedProduct:
+      typeof input.focusedProduct !== "undefined"
+        ? input.focusedProduct
+        : existing.focusedProduct,
+    productCta:
+      typeof input.productCta !== "undefined"
+        ? input.productCta
+        : existing.productCta,
+    faq: typeof input.faq !== "undefined" ? input.faq : existing.faq,
+    imageAltSuggestions:
+      typeof input.imageAltSuggestions !== "undefined"
+        ? input.imageAltSuggestions
+        : existing.imageAltSuggestions,
+    internalLinkingSuggestions:
+      typeof input.internalLinkingSuggestions !== "undefined"
+        ? input.internalLinkingSuggestions
+        : existing.internalLinkingSuggestions,
+    socialCaption:
+      typeof input.socialCaption !== "undefined"
+        ? input.socialCaption
+        : existing.socialCaption,
+    suggestedNextTopics:
+      typeof input.suggestedNextTopics !== "undefined"
+        ? input.suggestedNextTopics
+        : existing.suggestedNextTopics,
+    metadata:
+      typeof input.metadata !== "undefined" ? input.metadata : existing.metadata,
+    relatedLinks:
+      typeof input.relatedLinks !== "undefined"
+        ? input.relatedLinks
+        : existing.relatedLinks,
     sections:
       typeof input.sections !== "undefined" ||
       typeof input.content !== "undefined" ||
@@ -342,6 +437,14 @@ export const formatJournalPostCard = (post: JournalPost) => ({
   category: post.category,
   readTime: post.readTime,
   read_time: post.readTime,
+  targetKeyword: post.targetKeyword,
+  target_keyword: post.targetKeyword,
+  relatedKeywords: post.relatedKeywords,
+  related_keywords: post.relatedKeywords,
+  searchIntent: post.searchIntent,
+  search_intent: post.searchIntent,
+  focusedProduct: post.focusedProduct,
+  focused_product: post.focusedProduct,
   publishedAt: post.publishedAt,
   published_at: post.publishedAt,
   status: post.status,

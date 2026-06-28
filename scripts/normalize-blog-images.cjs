@@ -101,6 +101,16 @@ const isRemoteImage = (value) => /^https?:\/\//i.test(String(value || ""))
 
 const imageKey = (value) => String(value || "").trim().split("?")[0]
 
+const isRenderableImageUrl = (value) => {
+  const image = String(value || "").trim().split("?")[0].toLowerCase()
+
+  if (!image) {
+    return false
+  }
+
+  return !/\.(djvu|pdf|svg|txt|html?|xml)$/i.test(image)
+}
+
 const isUsableImage = (value) => {
   const image = String(value || "").trim()
 
@@ -112,7 +122,7 @@ const isUsableImage = (value) => {
     return false
   }
 
-  if (isRemoteImage(image)) {
+  if (isRemoteImage(image) && isRenderableImageUrl(image)) {
     return true
   }
 
@@ -160,6 +170,7 @@ const searchCommonsImages = async (query) => {
       .map((page) => page?.imageinfo?.[0])
       .filter((info) => info?.url && String(info.mime || "").startsWith("image/"))
       .map((info) => info.url)
+      .filter(isRenderableImageUrl)
   } catch {
     return []
   }
@@ -176,8 +187,8 @@ const getUniqueTopicImage = async (post, usedImages) => {
   candidates.push(...(topic.fallbackImages || []), topic.image)
 
   const image =
-    candidates.find((candidate) => isRemoteImage(candidate) && !usedImages.has(imageKey(candidate))) ||
-    topic.fallbackImages?.find((candidate) => !usedImages.has(imageKey(candidate))) ||
+    candidates.find((candidate) => isRemoteImage(candidate) && isRenderableImageUrl(candidate) && !usedImages.has(imageKey(candidate))) ||
+    topic.fallbackImages?.find((candidate) => isRenderableImageUrl(candidate) && !usedImages.has(imageKey(candidate))) ||
     topic.image
 
   return {
