@@ -1,7 +1,36 @@
-import { authenticate, defineMiddlewares } from "@medusajs/framework/http"
+import {
+  authenticate,
+  defineMiddlewares,
+  type MedusaNextFunction,
+  type MedusaRequest,
+  type MedusaResponse,
+} from "@medusajs/framework/http"
+
+const noStoreAdminCache = (
+  _req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+) => {
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0"
+  )
+  res.setHeader("Pragma", "no-cache")
+  res.setHeader("Expires", "0")
+  res.setHeader("Surrogate-Control", "no-store")
+  next()
+}
 
 export default defineMiddlewares({
   routes: [
+    {
+      matcher: /^\/app(\/.*)?$/,
+      middlewares: [noStoreAdminCache],
+    },
+    {
+      matcher: /^\/admin(\/.*)?$/,
+      middlewares: [noStoreAdminCache],
+    },
     {
       matcher: "/admin/blog/upload-image",
       methods: ["POST"],
@@ -32,10 +61,6 @@ export default defineMiddlewares({
     },
     {
       matcher: /^\/admin\/site-analytics(\/.*)?$/,
-      middlewares: [authenticate("user", ["session", "bearer"])],
-    },
-    {
-      matcher: /^\/admin\/sales-dashboard(\/.*)?$/,
       middlewares: [authenticate("user", ["session", "bearer"])],
     },
     {

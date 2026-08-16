@@ -64,6 +64,64 @@ export const ensureSiteAnalyticsTable = async (client: Client) => {
     CREATE INDEX IF NOT EXISTS idx_site_analytics_event_type_created_at
     ON site_analytics_event (event_type, created_at DESC)
   `)
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS admin_sales_followup (
+      session_id text PRIMARY KEY,
+      status text NOT NULL DEFAULT 'new',
+      note text NULL,
+      updated_by text NULL,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      created_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT admin_sales_followup_status_check
+        CHECK (status IN ('new', 'contacted', 'won', 'lost', 'snoozed'))
+    )
+  `)
+}
+
+export const updateSalesFollowup = async (input: {
+  session_id: string
+  status: string
+  note?: string | null
+  updated_by?: string | null
+}) => {
+  const client = getClient()
+  const sessionId = sanitizeText(input.session_id, "", 160)
+  const status = sanitizeText(input.status, "new", 30)
+  const allowed = new Set(["new", "contacted", "won", "lost", "snoozed"])
+
+  if (!sessionId || !allowed.has(status)) {
+    throw new Error("A valid sales session and status are required.")
+  }
+
+  await client.connect()
+
+  try {
+    await ensureSiteAnalyticsTable(client)
+    const result = await client.query(
+      `
+      INSERT INTO admin_sales_followup (
+        session_id, status, note, updated_by, updated_at
+      ) VALUES ($1, $2, $3, $4, now())
+      ON CONFLICT (session_id) DO UPDATE SET
+        status = EXCLUDED.status,
+        note = EXCLUDED.note,
+        updated_by = EXCLUDED.updated_by,
+        updated_at = now()
+      RETURNING session_id, status, note, updated_by, updated_at
+      `,
+      [
+        sessionId,
+        status,
+        sanitizeText(input.note, "", 1000) || null,
+        sanitizeText(input.updated_by, "", 240) || null,
+      ]
+    )
+
+    return result.rows[0]
+  } finally {
+    await client.end().catch(() => undefined)
+  }
 }
 
 export const recordSiteAnalyticsEvent = async (
@@ -133,10 +191,12 @@ export const getSiteAnalyticsSummary = async ({
   const parsedEnd = end ? new Date(end) : null
   const rangeEnd =
     parsedEnd && Number.isFinite(parsedEnd.getTime()) ? parsedEnd : new Date()
-  const rangeStart =
+    const rangeStart =
     parsedStart && Number.isFinite(parsedStart.getTime())
       ? parsedStart
       : new Date(rangeEnd.getTime() - safeDays * 24 * 60 * 60 * 1000)
+  const rangeDuration = rangeEnd.getTime() - rangeStart.getTime()
+  const previousStart = new Date(rangeStart.getTime() - rangeDuration)
 
   await client.connect()
 
@@ -245,7 +305,7 @@ export const getSiteAnalyticsSummary = async ({
           WHERE session_id IS NOT NULL
             AND created_at >= $1::timestamptz
             AND created_at < $2::timestamptz
-            AND event_type IN ('page_view', 'heartbeat', 'commerce_intent_click', 'payment_started', 'payment_failed', 'checkout_error')
+            AND event_type IN ('page_view', 'heartbeat', 'commerce_intent_click', 'payment_started', 'payment_failed', 'checkout_error', 'location_permission_granted')
           ORDER BY session_id, created_at DESC
         )
         SELECT *
@@ -291,15 +351,17 @@ export const getSiteAnalyticsSummary = async ({
           COALESCE(NULLIF(metadata_json #>> '{request_location,country}', ''), 'Unknown') AS country,
           COALESCE(NULLIF(metadata_json #>> '{request_location,region}', ''), '') AS region,
           COALESCE(NULLIF(metadata_json #>> '{request_location,city}', ''), '') AS city,
+          COALESCE(NULLIF(metadata_json #>> '{user_location,source}', ''), '') AS location_source,
           count(*)::int AS visits,
           count(DISTINCT session_id)::int AS unique_sessions
         FROM site_analytics_event
         WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz
-          AND event_type IN ('page_view', 'heartbeat')
+          AND event_type IN ('page_view', 'heartbeat', 'location_permission_granted')
         GROUP BY
           COALESCE(NULLIF(metadata_json #>> '{request_location,country}', ''), 'Unknown'),
           COALESCE(NULLIF(metadata_json #>> '{request_location,region}', ''), ''),
-          COALESCE(NULLIF(metadata_json #>> '{request_location,city}', ''), '')
+          COALESCE(NULLIF(metadata_json #>> '{request_location,city}', ''), ''),
+          COALESCE(NULLIF(metadata_json #>> '{user_location,source}', ''), '')
         ORDER BY unique_sessions DESC, visits DESC
         LIMIT $3
         `,
@@ -313,7 +375,10 @@ export const getSiteAnalyticsSummary = async ({
           count(DISTINCT session_id) FILTER (WHERE path LIKE '%/products/%')::int AS product_sessions,
           count(DISTINCT session_id) FILTER (WHERE path LIKE '%/cart%')::int AS cart_sessions,
           count(DISTINCT session_id) FILTER (WHERE path LIKE '%/checkout%')::int AS checkout_sessions,
-          count(DISTINCT session_id) FILTER (WHERE event_type IN ('payment_success','order_confirmed') OR path LIKE '%/order/%confirmed%')::int AS purchase_sessions
+          count(DISTINCT session_id) FILTER (
+            WHERE event_type IN ('payment_success','payment_authorized','order_confirmed','order_completed')
+              OR path LIKE '%/order/%confirmed%'
+          )::int AS purchase_sessions
         FROM site_analytics_event
         WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz
         `,
@@ -355,6 +420,7 @@ export const getSiteAnalyticsSummary = async ({
           FROM "order" o
           LEFT JOIN order_summary os ON os.order_id = o.id
           WHERE o.deleted_at IS NULL
+            AND o.status::text <> 'canceled'
             AND o.created_at >= $1::timestamptz
             AND o.created_at < $2::timestamptz
           ORDER BY o.id, os.version DESC NULLS LAST, o.version DESC
@@ -391,6 +457,124 @@ export const getSiteAnalyticsSummary = async ({
         `,
         [rangeStart, rangeEnd]
       )
+    const previous = await client.query(
+      `
+      WITH latest_orders AS (
+        SELECT DISTINCT ON (o.id)
+          o.id,
+          COALESCE(
+            NULLIF((os.totals->>'paid_total')::numeric, 0),
+            NULLIF((os.totals->>'current_order_total')::numeric, 0),
+            NULLIF((os.totals->>'original_order_total')::numeric, 0),
+            0
+          ) AS total
+        FROM "order" o
+        LEFT JOIN order_summary os ON os.order_id = o.id
+        WHERE o.deleted_at IS NULL
+          AND o.status::text <> 'canceled'
+          AND o.created_at >= $1::timestamptz
+          AND o.created_at < $2::timestamptz
+        ORDER BY o.id, os.version DESC NULLS LAST, o.version DESC
+      ), analytics AS (
+        SELECT
+          count(DISTINCT session_id) FILTER (WHERE event_type = 'page_view')::int AS sessions,
+          count(DISTINCT session_id) FILTER (WHERE path LIKE '%/products/%')::int AS product_sessions,
+          count(DISTINCT session_id) FILTER (WHERE path LIKE '%/cart%')::int AS cart_sessions,
+          count(DISTINCT session_id) FILTER (WHERE path LIKE '%/checkout%')::int AS checkout_sessions
+        FROM site_analytics_event
+        WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz
+      )
+      SELECT
+        count(lo.id)::int AS orders,
+        COALESCE(sum(lo.total), 0)::numeric AS revenue,
+        a.sessions,
+        a.product_sessions,
+        a.cart_sessions,
+        a.checkout_sessions
+      FROM analytics a
+      LEFT JOIN latest_orders lo ON true
+      GROUP BY a.sessions, a.product_sessions, a.cart_sessions, a.checkout_sessions
+      `,
+      [previousStart, rangeStart]
+    )
+    const customerSales = await client.query(
+      `
+      WITH period_orders AS (
+        SELECT DISTINCT ON (o.id)
+          o.id,
+          lower(NULLIF(o.email, '')) AS email,
+          o.created_at
+        FROM "order" o
+        WHERE o.deleted_at IS NULL
+          AND o.status::text <> 'canceled'
+          AND o.created_at >= $1::timestamptz
+          AND o.created_at < $2::timestamptz
+        ORDER BY o.id, o.version DESC
+      ), first_orders AS (
+        SELECT lower(NULLIF(email, '')) AS email, min(created_at) AS first_order_at
+        FROM "order"
+        WHERE deleted_at IS NULL
+          AND status::text <> 'canceled'
+          AND email IS NOT NULL
+        GROUP BY lower(NULLIF(email, ''))
+      )
+      SELECT
+        count(DISTINCT po.email)::int AS buying_customers,
+        count(DISTINCT po.email) FILTER (
+          WHERE fo.first_order_at >= $1::timestamptz
+        )::int AS new_customers,
+        count(DISTINCT po.email) FILTER (
+          WHERE fo.first_order_at < $1::timestamptz
+        )::int AS repeat_customers
+      FROM period_orders po
+      LEFT JOIN first_orders fo ON fo.email = po.email
+      `,
+      [rangeStart, rangeEnd]
+    )
+    const recovery = await client.query(
+      `
+      WITH session_events AS (
+        SELECT
+          session_id,
+          max(customer_email) FILTER (WHERE customer_email IS NOT NULL) AS customer_email,
+          max(customer_id) FILTER (WHERE customer_id IS NOT NULL) AS customer_id,
+          max(created_at) AS last_seen_at,
+          bool_or(path LIKE '%/checkout%' OR event_type = 'payment_started') AS reached_checkout,
+          bool_or(path LIKE '%/cart%') AS reached_cart,
+          bool_or(event_type IN ('payment_failed', 'checkout_error')) AS had_error,
+          bool_or(
+            event_type IN ('payment_success', 'payment_authorized', 'order_confirmed', 'order_completed')
+            OR path LIKE '%/order/%confirmed%'
+          ) AS purchased,
+          (array_agg(path ORDER BY created_at DESC))[1] AS last_path,
+          (array_agg(event_type ORDER BY created_at DESC))[1] AS last_event,
+          (array_agg(COALESCE(NULLIF(metadata_json->>'traffic_source', ''), 'direct') ORDER BY created_at DESC))[1] AS source,
+          (array_agg(metadata_json #> '{request_location}' ORDER BY created_at DESC))[1] AS location,
+          (array_agg(path ORDER BY created_at DESC) FILTER (WHERE path LIKE '%/products/%'))[1] AS product_path
+        FROM site_analytics_event
+        WHERE created_at >= $1::timestamptz
+          AND created_at < $2::timestamptz
+          AND session_id IS NOT NULL
+        GROUP BY session_id
+      )
+      SELECT
+        se.*,
+        COALESCE(f.status, 'new') AS status,
+        f.note,
+        f.updated_at AS followup_updated_at
+      FROM session_events se
+      LEFT JOIN admin_sales_followup f ON f.session_id = se.session_id
+      WHERE se.customer_email IS NOT NULL
+        AND (se.reached_cart OR se.reached_checkout OR se.had_error)
+        AND NOT se.purchased
+        AND COALESCE(f.status, 'new') NOT IN ('won', 'lost')
+      ORDER BY
+        CASE WHEN se.had_error THEN 0 WHEN se.reached_checkout THEN 1 ELSE 2 END,
+        se.last_seen_at DESC
+      LIMIT $3
+      `,
+      [rangeStart, rangeEnd, safeLimit]
+    )
     const topProducts = await client.query(
         `
         WITH latest_orders AS (
@@ -398,6 +582,7 @@ export const getSiteAnalyticsSummary = async ({
           FROM "order" o
           LEFT JOIN order_summary os ON os.order_id = o.id
           WHERE o.deleted_at IS NULL
+            AND o.status::text <> 'canceled'
             AND o.created_at >= $1::timestamptz
             AND o.created_at < $2::timestamptz
           ORDER BY o.id, os.version DESC NULLS LAST, o.version DESC
@@ -480,6 +665,7 @@ export const getSiteAnalyticsSummary = async ({
           FROM "order" o
           LEFT JOIN order_summary os ON os.order_id = o.id
           WHERE o.deleted_at IS NULL
+            AND o.status::text <> 'canceled'
             AND o.created_at >= $1::timestamptz
             AND o.created_at < $2::timestamptz
           ORDER BY o.id, os.version DESC NULLS LAST, o.version DESC
@@ -604,6 +790,20 @@ export const getSiteAnalyticsSummary = async ({
         payment_failed_events: 0,
         checkout_error_events: 0,
       },
+      comparison: previous.rows[0] || {
+        orders: 0,
+        revenue: 0,
+        sessions: 0,
+        product_sessions: 0,
+        cart_sessions: 0,
+        checkout_sessions: 0,
+      },
+      customers: customerSales.rows[0] || {
+        buying_customers: 0,
+        new_customers: 0,
+        repeat_customers: 0,
+      },
+      recovery: recovery.rows,
       top_products: topProducts.rows,
       product_catalog: productCatalog.rows,
       product_demand: productDemand.rows,

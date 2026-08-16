@@ -18,7 +18,7 @@ type TestResult = {
 }
 
 const MailPage = () => {
-  const [to, setTo] = useState("brajsavitrikrishisansthan@gmail.com")
+  const [to, setTo] = useState("brajsavitrikrishisanshtan@gmail.com")
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
   const [settingsLoading, setSettingsLoading] = useState(true)
@@ -243,7 +243,7 @@ const MailPage = () => {
             value={to}
             type="email"
             onChange={(event) => setTo(event.target.value)}
-            placeholder="brajsavitrikrishisansthan@gmail.com"
+            placeholder="brajsavitrikrishisanshtan@gmail.com"
           />
         </div>
 

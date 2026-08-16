@@ -346,6 +346,15 @@ const OrderReceiptsPage = () => {
               <Badge color="green">{orders.filter((order) => order.pending).length} pending</Badge>
               <Badge>{orders.length} loaded</Badge>
               <Badge>{printableOrders.length} receipts</Badge>
+              <Button
+                size="small"
+                variant="secondary"
+                onClick={() => {
+                  window.location.href = "/app/gst-report"
+                }}
+              >
+                Monthly GST report
+              </Button>
             </div>
           </div>
         </Container>

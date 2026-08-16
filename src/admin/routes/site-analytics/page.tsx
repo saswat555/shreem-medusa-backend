@@ -145,7 +145,17 @@ const normalizeKey = (value?: string | null) =>
     .replace(/&/g, "and")
     .replace(/\s+/g, " ")
 
-const getLocation = (metadata?: Metadata) => metadata?.request_location || {}
+const getLocation = (metadata?: Metadata) => {
+  const requestLocation = metadata?.request_location || {}
+  const userLocation = metadata?.user_location || {}
+
+  return {
+    ...requestLocation,
+    user_latitude: userLocation.latitude,
+    user_longitude: userLocation.longitude,
+    user_accuracy: userLocation.accuracy,
+  }
+}
 
 const getLocationLabel = (metadata?: Metadata) => {
   const location = getLocation(metadata)
@@ -153,7 +163,15 @@ const getLocationLabel = (metadata?: Metadata) => {
     .map((item) => String(item || "").trim())
     .filter(Boolean)
 
-  return parts.length ? parts.join(", ") : "Unknown"
+  if (parts.length) {
+    return parts.join(", ")
+  }
+
+  if (location.user_latitude && location.user_longitude) {
+    return `Browser GPS ${Number(location.user_latitude).toFixed(3)}, ${Number(location.user_longitude).toFixed(3)}`
+  }
+
+  return "Unknown"
 }
 
 const getSourceLabel = (metadata?: Metadata) =>
@@ -198,13 +216,39 @@ const featureToPath = (feature: any) => {
 
 const getEventState = (event: AnalyticsEvent) => {
   const location = getLocation(event.metadata_json)
-  return normalizeKey(location.region || location.state || "")
+  const explicitState = normalizeKey(location.region || location.state || "")
+
+  if (explicitState) {
+    return explicitState
+  }
+
+  const rawLat = Number(location.user_latitude || location.latitude)
+  const rawLon = Number(location.user_longitude || location.longitude)
+
+  if (!Number.isFinite(rawLat) || !Number.isFinite(rawLon)) {
+    return ""
+  }
+
+  let nearest = ""
+  let nearestDistance = Number.POSITIVE_INFINITY
+
+  for (const [state, center] of Object.entries(STATE_CENTERS)) {
+    const distance =
+      Math.pow(center.lat - rawLat, 2) + Math.pow(center.lon - rawLon, 2)
+
+    if (distance < nearestDistance) {
+      nearest = state
+      nearestDistance = distance
+    }
+  }
+
+  return nearest
 }
 
 const getEventCoords = (event: AnalyticsEvent, index: number) => {
   const location = getLocation(event.metadata_json)
-  const rawLat = Number(location.latitude)
-  const rawLon = Number(location.longitude)
+  const rawLat = Number(location.user_latitude || location.latitude)
+  const rawLon = Number(location.user_longitude || location.longitude)
   const city = normalizeKey(location.city)
   const state = getEventState(event)
   const candidate =
@@ -225,6 +269,7 @@ const getEventCoords = (event: AnalyticsEvent, index: number) => {
     state,
     label: getLocationLabel(event.metadata_json),
     source: getSourceLabel(event.metadata_json),
+    accuracy: location.user_accuracy,
   }
 }
 
@@ -625,6 +670,80 @@ const SmartUserMonitorPage = () => {
                   <Table.Cell>{source.source}</Table.Cell>
                   <Table.Cell>{number(source.visits)}</Table.Cell>
                   <Table.Cell>{number(source.unique_sessions)}</Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        </div>
+      </div>
+
+      <div className="grid gap-5 px-6 py-5 lg:grid-cols-2">
+        <div>
+          <Heading level="h2">Session Journeys</Heading>
+          <Text className="text-ui-fg-subtle">
+            Latest path sequence per visitor, useful for spotting where interest drops.
+          </Text>
+          <Table className="mt-3">
+            <Table.Header>
+              <Table.Row>
+                <Table.HeaderCell>Visitor</Table.HeaderCell>
+                <Table.HeaderCell>Latest journey</Table.HeaderCell>
+                <Table.HeaderCell>Location</Table.HeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {(summary?.journeys || []).slice(0, 18).map((journey) => {
+                const firstEvent = journey.events?.[0]
+                const pages = (journey.events || [])
+                  .slice(0, 5)
+                  .map((event) => event.path)
+                  .filter(Boolean)
+
+                return (
+                  <Table.Row key={journey.session_id}>
+                    <Table.Cell className="max-w-[180px] truncate">
+                      {journey.customer_email || `Visitor ${shortSession(journey.session_id)}`}
+                    </Table.Cell>
+                    <Table.Cell className="max-w-[420px] truncate">
+                      {pages.length ? pages.join(" <- ") : "-"}
+                    </Table.Cell>
+                    <Table.Cell className="max-w-[180px] truncate">
+                      {firstEvent?.location
+                        ? [firstEvent.location.city, firstEvent.location.region, firstEvent.location.country]
+                            .filter(Boolean)
+                            .join(", ") || "Unknown"
+                        : "Unknown"}
+                    </Table.Cell>
+                  </Table.Row>
+                )
+              })}
+            </Table.Body>
+          </Table>
+        </div>
+
+        <div>
+          <Heading level="h2">Location Breakdown</Heading>
+          <Text className="text-ui-fg-subtle">
+            Rough request location from Cloudflare/Vercel headers where available.
+          </Text>
+          <Table className="mt-3">
+            <Table.Header>
+              <Table.Row>
+                <Table.HeaderCell>Location</Table.HeaderCell>
+                <Table.HeaderCell>Visits</Table.HeaderCell>
+                <Table.HeaderCell>Sessions</Table.HeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {(summary?.locations || []).slice(0, 20).map((location, index) => (
+                <Table.Row key={`${location.country}-${location.region}-${location.city}-${index}`}>
+                  <Table.Cell className="max-w-[260px] truncate">
+                    {[location.city, location.region, location.country]
+                      .filter(Boolean)
+                      .join(", ") || "Unknown"}
+                  </Table.Cell>
+                  <Table.Cell>{number(location.visits)}</Table.Cell>
+                  <Table.Cell>{number(location.unique_sessions)}</Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>

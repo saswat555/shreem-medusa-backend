@@ -68,7 +68,7 @@ const fetchCapturedPayment = async ({
   const keySecret = String(process.env.RAZORPAY_KEY_SECRET || "").trim()
 
   if (!keyId || !keySecret) {
-    return false
+    return { verified: false, payment: null as any, reason: "missing_credentials" }
   }
 
   const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64")
@@ -82,14 +82,20 @@ const fetchCapturedPayment = async ({
   )
 
   if (!response.ok) {
-    return false
+    return { verified: false, payment: null as any, reason: `razorpay_${response.status}` }
   }
 
   const body = await response.json()
   const payments = Array.isArray(body?.items) ? body.items : []
   const payment = payments.find((item: any) => item?.id === paymentId)
 
-  return payment?.status === "captured" || payment?.captured === true
+  return {
+    verified: payment?.status === "captured" || payment?.captured === true,
+    payment,
+    reason: !payment
+      ? "payment_not_found"
+      : payment?.status || "unknown_status",
+  }
 }
 
 const getPublishableKey = async (client: Client) => {
@@ -131,6 +137,233 @@ const completeCart = async ({
   return body
 }
 
+const markPaymentCaptured = async ({
+  client,
+  paymentSessionId,
+  paymentCollectionId,
+  razorpayOrderId,
+  razorpayPaymentId,
+}: {
+  client: Client
+  paymentSessionId: string
+  paymentCollectionId: string
+  razorpayOrderId: string
+  razorpayPaymentId: string
+}) => {
+  await client.query("begin")
+
+  try {
+    const paymentResult = await client.query(
+      `
+        update payment
+        set
+          captured_at = coalesce(captured_at, now()),
+          data = coalesce(data, '{}'::jsonb) || jsonb_build_object(
+            'provider', 'razorpay',
+            'verified', true,
+            'captured_payment_verified', true,
+            'razorpay_status', 'captured',
+            'razorpay_payment_status', 'captured',
+            'razorpay_order_id', $2::text,
+            'razorpay_payment_id', $3::text
+          ),
+          updated_at = now()
+        where payment_session_id = $1
+          and deleted_at is null
+        returning id, amount, raw_amount
+      `,
+      [paymentSessionId, razorpayOrderId, razorpayPaymentId]
+    )
+    const payment = paymentResult.rows[0]
+
+    let captureId = ""
+
+    if (payment) {
+      captureId = `cap_${crypto
+        .createHash("sha1")
+        .update(`${payment.id}:${razorpayPaymentId}`)
+        .digest("hex")
+        .slice(0, 26)}`
+
+      await client.query(
+        `
+          insert into capture (
+            id,
+            amount,
+            raw_amount,
+            payment_id,
+            metadata,
+            created_at,
+            updated_at
+          )
+          select
+            $1::text,
+            $2::numeric,
+            $3::jsonb,
+            $4::text,
+            jsonb_build_object(
+              'source', 'razorpay_checkout_completion',
+              'razorpay_order_id', $5::text,
+              'razorpay_payment_id', $6::text
+            ),
+            now(),
+            now()
+          where not exists (
+            select 1
+            from capture
+            where payment_id = $4::text
+              and deleted_at is null
+          )
+        `,
+        [
+          captureId,
+          payment.amount,
+          payment.raw_amount,
+          payment.id,
+          razorpayOrderId,
+          razorpayPaymentId,
+        ]
+      )
+    }
+
+    await client.query(
+      `
+        update payment_collection
+        set
+          status = 'completed',
+          captured_amount = amount,
+          raw_captured_amount = raw_amount,
+          completed_at = coalesce(completed_at, now()),
+          updated_at = now()
+        where id = $1
+      `,
+      [paymentCollectionId]
+    )
+
+    const orderResult = await client.query(
+      `
+        select o.id as order_id, o.currency_code, o.version
+        from order_payment_collection opc
+        join "order" o on o.id = opc.order_id
+        where opc.payment_collection_id = $1
+          and opc.deleted_at is null
+          and o.deleted_at is null
+        union
+        select o.id as order_id, o.currency_code, o.version
+        from cart_payment_collection cpc
+        join order_cart oc on oc.cart_id = cpc.cart_id and oc.deleted_at is null
+        join "order" o on o.id = oc.order_id
+        where cpc.payment_collection_id = $1
+          and cpc.deleted_at is null
+          and o.deleted_at is null
+        limit 1
+      `,
+      [paymentCollectionId]
+    )
+    const order = orderResult.rows[0]
+
+    if (!order || !payment) {
+      await client.query("commit")
+      return { order_id: order?.order_id || "" }
+    }
+
+    const transactionReference = captureId || payment.id
+    const transactionId = `ordtrx_${crypto
+      .createHash("sha1")
+      .update(`${order.order_id}:${transactionReference}`)
+      .digest("hex")
+      .slice(0, 26)}`
+
+    await client.query(
+      `
+        insert into order_transaction (
+          id,
+          order_id,
+          version,
+          amount,
+          raw_amount,
+          currency_code,
+          reference,
+          reference_id,
+          created_at,
+          updated_at
+        )
+        select
+          $1::text,
+          $2::text,
+          $3::integer,
+          $4::numeric,
+          $5::jsonb,
+          $6::text,
+          'capture',
+          $7::text,
+          now(),
+          now()
+        where not exists (
+          select 1
+          from order_transaction
+          where order_id = $2::text
+            and reference = 'capture'
+            and reference_id = $7::text
+            and deleted_at is null
+        )
+      `,
+      [
+        transactionId,
+        order.order_id,
+        Number(order.version || 1),
+        payment.amount,
+        payment.raw_amount,
+        order.currency_code,
+        transactionReference,
+      ]
+    )
+
+    await client.query(
+      `
+        update order_summary
+        set
+          totals = coalesce(totals, '{}'::jsonb) || jsonb_build_object(
+            'paid_total', $2::numeric,
+            'raw_paid_total', $3::jsonb,
+            'transaction_total', $2::numeric,
+            'raw_transaction_total', $3::jsonb,
+            'pending_difference', 0,
+            'raw_pending_difference', jsonb_build_object('value', '0', 'precision', 20)
+          ),
+          updated_at = now()
+        where order_id = $1
+          and deleted_at is null
+      `,
+      [order.order_id, payment.amount, payment.raw_amount]
+    )
+
+    await client.query("commit")
+    return { order_id: order.order_id }
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined)
+    throw error
+  }
+}
+
+const getCompletedOrder = async (client: Client, cartId: string) => {
+  const result = await client.query(
+    `
+      select o.id, o.display_id, o.email, o.currency_code
+      from order_cart oc
+      join "order" o on o.id = oc.order_id
+      where oc.cart_id = $1
+        and oc.deleted_at is null
+        and o.deleted_at is null
+      order by o.created_at desc
+      limit 1
+    `,
+    [cartId]
+  )
+
+  return result.rows[0] || null
+}
+
 export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
   const {
     cart_id: cartId,
@@ -153,17 +386,16 @@ export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
     paymentId: razorpayPaymentId,
     signature: razorpaySignature,
   })
-  const captureVerified =
-    signatureVerified ||
-    (await fetchCapturedPayment({
-      orderId: razorpayOrderId,
-      paymentId: razorpayPaymentId,
-    }))
+  const capturedPayment = await fetchCapturedPayment({
+    orderId: razorpayOrderId,
+    paymentId: razorpayPaymentId,
+  })
+  const captureVerified = signatureVerified || capturedPayment.verified
 
   if (!captureVerified) {
     return res.status(409).json({
       ok: false,
-      message: "Razorpay payment could not be verified as captured",
+      message: `Razorpay payment could not be verified as captured (${capturedPayment.reason})`,
     })
   }
 
@@ -178,10 +410,15 @@ export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
         select
           ps.id as payment_session_id,
           ps.amount,
+          ps.data as payment_session_data,
           ps.payment_collection_id,
+          pc.amount as payment_collection_amount,
           cpc.cart_id,
           c.completed_at as cart_completed_at
         from payment_session ps
+        join payment_collection pc
+          on pc.id = ps.payment_collection_id
+          and pc.deleted_at is null
         join cart_payment_collection cpc
           on cpc.payment_collection_id = ps.payment_collection_id
           and cpc.deleted_at is null
@@ -202,6 +439,40 @@ export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
       return res.status(404).json({
         ok: false,
         message: "Payment session for cart was not found",
+      })
+    }
+
+    if (!capturedPayment.payment) {
+      await client.query("rollback")
+      return res.status(409).json({
+        ok: false,
+        message: "Razorpay payment was signed but live payment details could not be loaded for amount verification. Please contact support.",
+      })
+    }
+
+    const expectedMinorAmount = Math.round(
+      Number(session.payment_collection_amount || session.amount || 0) * 100
+    )
+    const paidMinorAmount = Number(capturedPayment.payment?.amount || 0)
+
+    if (
+      expectedMinorAmount <= 0 ||
+      paidMinorAmount <= 0 ||
+      expectedMinorAmount !== paidMinorAmount
+    ) {
+      await client.query("rollback")
+      console.error("[razorpay-complete] amount mismatch", {
+        cart_id: cartId,
+        payment_collection_id: paymentCollectionId,
+        payment_session_id: paymentSessionId,
+        razorpay_order_id: razorpayOrderId,
+        razorpay_payment_id: razorpayPaymentId,
+        expected_minor_amount: expectedMinorAmount,
+        paid_minor_amount: paidMinorAmount,
+      })
+      return res.status(409).json({
+        ok: false,
+        message: "Razorpay payment amount does not match the current cart total. Please contact support before retrying payment.",
       })
     }
 
@@ -272,6 +543,14 @@ export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
       completeResponse = await completeCart({ cartId, publishableKey })
     }
 
+    await markPaymentCaptured({
+      client,
+      paymentSessionId,
+      paymentCollectionId,
+      razorpayOrderId,
+      razorpayPaymentId,
+    })
+
     let completePayload: any = undefined
     if (completeResponse) {
       try {
@@ -281,12 +560,15 @@ export const POST = async (req: MedusaRequest<Body>, res: MedusaResponse) => {
       }
     }
 
+    const order = completePayload?.order || (await getCompletedOrder(client, cartId))
+
     return res.json({
       ok: true,
       cart_id: cartId,
       payment_session_id: paymentSessionId,
       payment_collection_id: paymentCollectionId,
       completed: !session.cart_completed_at,
+      order,
       complete_response: completePayload,
     })
   } catch (error: any) {

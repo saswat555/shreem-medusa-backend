@@ -33,11 +33,22 @@ export const GET = async (
     })
   }
 
-  const days = Number(req.query.days || 7)
-  const limit = Number(req.query.limit || 20)
-  const start = typeof req.query.start === "string" ? req.query.start : null
-  const end = typeof req.query.end === "string" ? req.query.end : null
-  const summary = await getSiteAnalyticsSummary({ days, limit, start, end })
+  try {
+    const days = Number(req.query.days || 7)
+    const limit = Number(req.query.limit || 20)
+    const start = typeof req.query.start === "string" ? req.query.start : null
+    const end = typeof req.query.end === "string" ? req.query.end : null
+    const summary = await getSiteAnalyticsSummary({ days, limit, start, end })
 
-  return res.json(summary)
+    return res.json(summary)
+  } catch (error: any) {
+    console.error("[admin/site-analytics] load failed", {
+      message: error?.message,
+    })
+
+    return res.status(500).json({
+      message:
+        "User monitoring could not load right now. Check analytics database logs and refresh.",
+    })
+  }
 }

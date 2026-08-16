@@ -29,8 +29,8 @@ const getFromAddress = () => ({
   province: process.env.SHREEM_SHIPPING_FROM_STATE || "Madhya Pradesh",
   postal_code: process.env.SHREEM_SHIPPING_FROM_PINCODE || "",
   country_code: process.env.SHREEM_SHIPPING_FROM_COUNTRY || "IN",
-  phone: process.env.SHREEM_SHIPPING_FROM_PHONE || "",
-  email: process.env.SHREEM_SHIPPING_FROM_EMAIL || "support@shreemfarms.in",
+  phone: process.env.SHREEM_SHIPPING_FROM_PHONE || "8102204292",
+  email: process.env.SHREEM_SHIPPING_FROM_EMAIL || "brajsavitrikrishisanshtan@gmail.com",
 })
 
 const clean = (value: unknown) => String(value || "").trim()

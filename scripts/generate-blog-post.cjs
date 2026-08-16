@@ -2,6 +2,7 @@
 
 const fs = require("node:fs")
 const path = require("node:path")
+const sharp = require("sharp")
 
 const backendRoot = path.resolve(__dirname, "..")
 const workspaceRoot = path.resolve(backendRoot, "..")
@@ -59,6 +60,110 @@ const slugify = (value) =>
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
+
+const escapeSvg = (value) =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+
+const splitTitleLines = (value) => {
+  const words = String(value || "Shreem Farms")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+  const lines = []
+  let current = ""
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word
+
+    if (next.length > 28 && current) {
+      lines.push(current)
+      current = word
+    } else {
+      current = next
+    }
+
+    if (lines.length === 3) {
+      break
+    }
+  }
+
+  if (current && lines.length < 4) {
+    lines.push(current)
+  }
+
+  return lines.slice(0, 4)
+}
+
+const topicPalette = (topic) => {
+  const text = `${topic?.pillar || ""} ${topic?.keyword || ""}`.toLowerCase()
+
+  if (/astrology|kundli|panchang|jyotish|muhurat/.test(text)) {
+    return { from: "#172554", to: "#8b5cf6", accent: "#facc15", motif: "Jyotish" }
+  }
+
+  if (/dhoop|havan|cow dung|gau|pooja|ritual/.test(text)) {
+    return { from: "#3b1d0b", to: "#d97706", accent: "#fde68a", motif: "Ritual" }
+  }
+
+  if (/atta|arhar|ghee|food|purity|d2c|preservative/.test(text)) {
+    return { from: "#123524", to: "#d4a126", accent: "#fff7ed", motif: "Pure Food" }
+  }
+
+  return { from: "#174137", to: "#65a30d", accent: "#ecfccb", motif: "Natural Farming" }
+}
+
+const createLocalBlogImage = async ({ slug, title, topic }) => {
+  const safeSlug = slugify(slug || title).slice(0, 110) || `post-${Date.now()}`
+  const outputDirs = [
+    path.join(workspaceRoot, "persistent", "static", "blog-images"),
+    path.join(workspaceRoot, "shreem-storefront", "public", "blog-images"),
+    path.join(workspaceRoot, "shreem-storefront", "public", "static", "blog-images"),
+  ]
+  const fileName = `${safeSlug}.webp`
+  const palette = topicPalette(topic)
+  const lines = splitTitleLines(title)
+  const lineSvg = lines
+    .map(
+      (line, index) =>
+        `<text x="88" y="${300 + index * 72}" font-size="${
+          index === 0 ? 54 : 48
+        }" font-weight="800" fill="#fffaf0">${escapeSvg(line)}</text>`
+    )
+    .join("")
+  const svg = `
+<svg width="1200" height="675" viewBox="0 0 1200 675" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="${palette.from}"/>
+      <stop offset="100%" stop-color="${palette.to}"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="78%" cy="20%" r="55%">
+      <stop offset="0%" stop-color="${palette.accent}" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="${palette.accent}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <rect width="1200" height="675" fill="url(#glow)"/>
+  <circle cx="990" cy="160" r="112" fill="none" stroke="${palette.accent}" stroke-width="5" opacity="0.5"/>
+  <circle cx="990" cy="160" r="58" fill="none" stroke="${palette.accent}" stroke-width="3" opacity="0.42"/>
+  <path d="M100 560 C250 500 380 600 540 540 C700 480 835 535 1100 470" fill="none" stroke="${palette.accent}" stroke-width="8" opacity="0.32"/>
+  <text x="88" y="108" font-size="30" font-weight="800" letter-spacing="7" fill="${palette.accent}">SHREEM FARMS</text>
+  <text x="88" y="158" font-size="24" font-weight="700" fill="#fffaf0" opacity="0.82">${escapeSvg(palette.motif)}</text>
+  ${lineSvg}
+  <text x="88" y="610" font-size="24" font-weight="700" fill="#fffaf0" opacity="0.82">Pure D2C India · No-preservative mindset · Practical guidance</text>
+</svg>`
+
+  for (const outputDir of outputDirs) {
+    fs.mkdirSync(outputDir, { recursive: true })
+    await sharp(Buffer.from(svg)).webp({ quality: 88 }).toFile(path.join(outputDir, fileName))
+  }
+
+  return `/static/blog-images/${fileName}`
+}
 
 const appendLog = (message, data = {}) => {
   fs.mkdirSync(path.dirname(logFile), { recursive: true })
@@ -135,6 +240,20 @@ const sleep = (ms) =>
   new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
+
+const SAFE_REMOTE_IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|gif)(\?|$)/i
+const UNSAFE_REMOTE_IMAGE_EXTENSIONS = /\.(avif|bmp|djvu|heic|html?|ico|pdf|svg|tif|tiff|txt|xml)(\?|$)/i
+const checkedRemoteImages = new Map()
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 2000) => {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
+}
 
 const PRODUCT_FOCUS = {
   a2Ghee: {
@@ -932,6 +1051,22 @@ const pickTopic = async (posts) => {
       score += 10
     }
 
+    if (/(cow dung cakes|cow dung cake|gobar|dhooni)/i.test(topic.keyword)) {
+      score += 24
+    }
+
+    if (/(black wheat|shreem atta|atta)/i.test(topic.keyword)) {
+      score += 18
+    }
+
+    if (/(shreem astrology|ai kundli|prashna|panchang|muhurat)/i.test(topic.keyword)) {
+      score += 16
+    }
+
+    if (/(desi arhar|toor dal|arhar dal|neem dhoop|gau kasht)/i.test(topic.keyword)) {
+      score += 14
+    }
+
     for (const term of String(topic.keyword).toLowerCase().split(/\s+/)) {
       if (term.length > 4 && recentText.includes(term)) {
         score -= 2
@@ -995,7 +1130,48 @@ const isRenderableImageUrl = (value) => {
     return false
   }
 
-  return !/\.(djvu|pdf|svg|txt|html?|xml)$/i.test(image)
+  if (UNSAFE_REMOTE_IMAGE_EXTENSIONS.test(image)) {
+    return false
+  }
+
+  return SAFE_REMOTE_IMAGE_EXTENSIONS.test(image)
+}
+
+const verifyRemoteImage = async (value) => {
+  const image = String(value || "").trim()
+
+  if (!/^https?:\/\//i.test(image) || !isRenderableImageUrl(image)) {
+    return false
+  }
+
+  if (/^https:\/\/upload\.wikimedia\.org\//i.test(image)) {
+    return true
+  }
+
+  const key = imageKey(image)
+
+  if (checkedRemoteImages.has(key)) {
+    return checkedRemoteImages.get(key)
+  }
+
+  try {
+    const response = await fetchWithTimeout(image, {
+      method: "HEAD",
+      redirect: "follow",
+      headers: {
+        "User-Agent": "ShreemFarmsSEO/1.0 (blog cron image validation)",
+      },
+    })
+    const contentType = response.headers.get("content-type") || ""
+    const ok =
+      response.ok &&
+      /^image\/(jpeg|jpg|png|webp|gif)/i.test(contentType)
+    checkedRemoteImages.set(key, ok)
+    return ok
+  } catch {
+    checkedRemoteImages.set(key, false)
+    return false
+  }
 }
 
 const searchCommonsImages = async (query) => {
@@ -1011,16 +1187,18 @@ const searchCommonsImages = async (query) => {
   url.searchParams.set("origin", "*")
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       headers: {
         "User-Agent": "ShreemFarmsSEO/1.0 (blog cron image search)",
       },
-    })
+    }, 7000)
     const body = await response.json()
 
     return Object.values(body?.query?.pages || {})
       .map((page) => page?.imageinfo?.[0])
-    .filter((info) => info?.url && String(info.mime || "").startsWith("image/"))
+      .filter((info) =>
+        /^image\/(jpeg|jpg|png|webp|gif)/i.test(String(info?.mime || ""))
+      )
     .map((info) => info.url)
     .filter(isRenderableImageUrl)
   } catch {
@@ -1052,7 +1230,8 @@ const getUniqueImageCandidates = async (topic, usedImages) => {
       !candidate.image ||
       !isRenderableImageUrl(candidate.image) ||
       seen.has(key) ||
-      usedImages.has(key)
+      usedImages.has(key) ||
+      !(await verifyRemoteImage(candidate.image))
     ) {
       continue
     }
@@ -1061,7 +1240,15 @@ const getUniqueImageCandidates = async (topic, usedImages) => {
     unique.push(candidate)
   }
 
-  return unique.length ? unique : candidates
+  return unique.length
+    ? unique
+    : [
+        {
+          image: "https://upload.wikimedia.org/wikipedia/commons/4/41/India_Farming.jpg",
+          imageAlt: "Indian farm context for a Shreem Farms article",
+          source: "web_wikimedia_verified_fallback",
+        },
+      ]
 }
 
 const normalizeImage = async (draft, topic, usedImages) => {
@@ -1565,6 +1752,7 @@ const normalizePost = async (draft, posts, topic) => {
     posts.map((post) => imageKey(post.imageUrl || post.image)).filter(Boolean)
   )
   const image = await normalizeImage(draft, topic, usedImages)
+  const localImage = await createLocalBlogImage({ slug, title, topic })
 
   return {
     id: `journal_${now.replace(/[^0-9]/g, "")}_${Math.random()
@@ -1579,11 +1767,11 @@ const normalizePost = async (draft, posts, topic) => {
     excerpt:
       String(draft.excerpt || draft.description || title).trim().slice(0, 220),
     content: "",
-    image: image.image,
-    imageUrl: image.imageUrl,
+    image: localImage,
+    imageUrl: localImage,
     imageAlt: image.imageAlt,
     imageSearchQuery: image.imageSearchQuery,
-    imageSource: image.imageSource,
+    imageSource: "shreem_generated_local",
     category: String(draft.category || "Shreem Blog").trim(),
     readTime: String(draft.readTime || draft.read_time || "5 min read").trim(),
     status: "published",

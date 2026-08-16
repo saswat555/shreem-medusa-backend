@@ -73,38 +73,92 @@ const getCurrency = (input: any) =>
       "INR"
   ).toUpperCase()
 
-const getAmount = (input: any) => {
-  const parsed = readNumber(input?.amount)
-  const currency = getCurrency(input)
+const RAZORPAY_CURRENCY_EXPONENTS: Record<string, number> = { INR: 2 }
+
+const getCurrencyExponent = (currency: string) => {
+  const exponent = RAZORPAY_CURRENCY_EXPONENTS[currency]
+
+  if (exponent === undefined) {
+    throw new Error(
+      `Unsupported Razorpay currency: ${currency}. Shreem Farms checkout supports INR only.`
+    )
+  }
+
+  return exponent
+}
+
+const toRazorpayMinorAmount = ({
+  amount,
+  currency,
+}: {
+  amount: any
+  currency: string
+}) => {
+  const parsed = readNumber(amount)
 
   if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`Invalid Razorpay amount: ${JSON.stringify(amount)}`)
+  }
+
+  const exponent = getCurrencyExponent(currency)
+  const minorAmount = Math.round(parsed * Math.pow(10, exponent))
+
+  if (!Number.isFinite(minorAmount) || minorAmount < 100) {
+    throw new Error(
+      `Refusing to create Razorpay order below minimum amount. Parsed ${parsed} ${currency} to ${minorAmount} minor units.`
+    )
+  }
+
+  return { parsed, exponent, minorAmount }
+}
+
+const readExpectedRazorpayMinorAmount = (data: Record<string, any>) => {
+  const explicitMinor = readNumber(data.razorpay_amount)
+
+  if (Number.isFinite(explicitMinor) && explicitMinor > 0) {
+    return Math.round(explicitMinor)
+  }
+
+  const amount = data.amount
+  const currency = String(
+    data.razorpay_currency || data.currency || process.env.RAZORPAY_CURRENCY || "INR"
+  ).toUpperCase()
+
+  try {
+    return toRazorpayMinorAmount({ amount, currency }).minorAmount
+  } catch {
+    return null
+  }
+}
+
+const getAmount = (input: any) => {
+  const currency = getCurrency(input)
+
+  try {
+    const { parsed, exponent, minorAmount } = toRazorpayMinorAmount({
+      amount: input?.amount,
+      currency,
+    })
+
+    console.log("[razorpay-provider] amount conversion", {
+      input_amount: parsed,
+      currency,
+      exponent,
+      razorpay_minor_amount: minorAmount,
+    })
+
+    return minorAmount
+  } catch (error) {
     console.error("[razorpay-provider] invalid amount input", {
       amount: input?.amount,
       amount_type: typeof input?.amount,
       currency,
       keys: input ? Object.keys(input) : [],
+      message: error instanceof Error ? error.message : String(error),
     })
 
-    throw new Error(`Invalid Razorpay amount: ${JSON.stringify(input?.amount)}`)
+    throw error
   }
-
-  const currencyExponents: Record<string, number> = { INR: 2 }
-  const exponent = currencyExponents[currency]
-
-  if (exponent === undefined) {
-    throw new Error(`Unsupported Razorpay currency: ${currency}. Shreem Farms checkout supports INR only.`)
-  }
-
-  const minorAmount = Math.round(parsed * Math.pow(10, exponent))
-
-  console.log("[razorpay-provider] amount conversion", {
-    input_amount: parsed,
-    currency,
-    exponent,
-    razorpay_minor_amount: minorAmount,
-  })
-
-  return Math.max(minorAmount, 100)
 }
 
 const verifySignature = ({
@@ -330,7 +384,7 @@ class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
             options: this.options_,
             orderId: String(orderId),
             paymentId: String(paymentId),
-            expectedAmount: Number(data.razorpay_amount || data.amount || 0) || null,
+            expectedAmount: readExpectedRazorpayMinorAmount(data),
           })
       const verified = signatureVerified || captureVerification.verified
 
@@ -421,7 +475,7 @@ class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
         options: this.options_,
         orderId: String(data.razorpay_order_id),
         paymentId: String(data.razorpay_payment_id),
-        expectedAmount: Number(data.razorpay_amount || data.amount || 0) || null,
+        expectedAmount: readExpectedRazorpayMinorAmount(data),
       })
 
       if (captureVerification.verified) {
@@ -515,7 +569,7 @@ class RazorpayProviderService extends AbstractPaymentProvider<RazorpayOptions> {
         options: this.options_,
         orderId: String(orderId),
         paymentId: String(paymentId),
-        expectedAmount: Number(data.razorpay_amount || data.amount || 0) || null,
+        expectedAmount: readExpectedRazorpayMinorAmount(data),
       })
     }
 

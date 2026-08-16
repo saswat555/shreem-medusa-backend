@@ -22,9 +22,19 @@ const OrderReceiptPrinterWidget = ({ data }: DetailWidgetProps<AdminOrder>) => {
         </Text>
       </div>
       <div className="p-4">
-        <Button variant="secondary" onClick={openReceiptPrinter}>
-          Print receipt for this order
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button variant="secondary" onClick={openReceiptPrinter}>
+            Print receipt for this order
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              window.location.href = "/app/gst-report"
+            }}
+          >
+            Monthly GST sales report
+          </Button>
+        </div>
       </div>
     </Container>
   )

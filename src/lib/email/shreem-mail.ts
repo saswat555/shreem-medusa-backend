@@ -395,12 +395,7 @@ export const buildCustomerOrderPlacedEmail = ({
   orderUrl: string
 }) => {
   const displayId = order?.display_id ? `#${order.display_id}` : order?.id || "your order"
-  const rawTotal = Number(order?.total || 0)
-  const currency = String(order?.currency_code || "INR").toUpperCase()
-  const total = new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency,
-  }).format(rawTotal / 100)
+  const total = formatOrderMoney(order?.total, order?.currency_code)
   const items = Array.isArray(order?.items) ? order.items : []
   const itemSummary = items
     .map((item: any) => `${item?.quantity || 1} x ${item?.title || item?.product_title || "Item"}`)
@@ -466,6 +461,16 @@ const escapeHtml = (value: unknown) =>
     return entities[char] || char
   })
 
+const formatOrderMoney = (value: unknown, currencyCode?: string | null) => {
+  const amount = Number(value || 0)
+  const currency = String(currencyCode || "INR").toUpperCase()
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+  }).format(amount)
+}
+
 export const buildStakeholderOrderEmail = ({
   order,
   adminOrderUrl,
@@ -512,12 +517,7 @@ export const buildStakeholderOrderEmail = ({
         .filter(Boolean)
         .join(", ")
     : "No shipping address found."
-  const rawTotal = Number(order?.total || 0)
-  const currency = String(order?.currency_code || "INR").toUpperCase()
-  const total = new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency,
-  }).format(rawTotal / 100)
+  const total = formatOrderMoney(order?.total, order?.currency_code)
 
   const text = `New Shreem order ${displayId}
 

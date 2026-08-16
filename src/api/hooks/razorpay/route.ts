@@ -180,185 +180,201 @@ const markPaymentCaptured = async ({
   paymentSessionId,
   paymentCollectionId,
   razorpayPaymentId,
+  razorpayOrderId,
 }: {
   client: Client
   paymentSessionId: string
   paymentCollectionId: string
   razorpayPaymentId: string
+  razorpayOrderId: string
 }) => {
   await client.query("begin")
 
   try {
-  const paymentResult = await client.query(
-    `
-      update payment
-      set
-        captured_at = coalesce(captured_at, now()),
-        data = coalesce(data, '{}'::jsonb) || jsonb_build_object(
-          'razorpay_status', 'captured',
-          'razorpay_payment_id', $2::text,
-          'captured_payment_verified', true
-        ),
-        updated_at = now()
-      where payment_session_id = $1
-        and deleted_at is null
-      returning id, amount, raw_amount
-    `,
-    [paymentSessionId, razorpayPaymentId]
-  )
-  const payment = paymentResult.rows[0]
+    const paymentResult = await client.query(
+      `
+        update payment
+        set
+          captured_at = coalesce(captured_at, now()),
+          data = coalesce(data, '{}'::jsonb) || jsonb_build_object(
+            'provider', 'razorpay',
+            'verified', true,
+            'razorpay_status', 'captured',
+            'razorpay_order_id', $3::text,
+            'razorpay_payment_id', $2::text,
+            'razorpay_payment_status', 'captured',
+            'captured_payment_verified', true
+          ),
+          updated_at = now()
+        where payment_session_id = $1
+          and deleted_at is null
+        returning id, amount, raw_amount
+      `,
+      [paymentSessionId, razorpayPaymentId, razorpayOrderId]
+    )
+    const payment = paymentResult.rows[0]
 
-  let captureId = ""
+    let captureId = ""
 
-  if (payment) {
-    captureId = `cap_${crypto
+    if (payment) {
+      captureId = `cap_${crypto
+        .createHash("sha1")
+        .update(`${payment.id}:${razorpayPaymentId}`)
+        .digest("hex")
+        .slice(0, 26)}`
+
+      await client.query(
+        `
+          insert into capture (
+            id,
+            amount,
+            raw_amount,
+            payment_id,
+            metadata,
+            created_at,
+            updated_at
+          )
+          select
+            $1::text,
+            $2::numeric,
+            $3::jsonb,
+            $4::text,
+            jsonb_build_object(
+              'source', 'razorpay_webhook',
+              'razorpay_order_id', $5::text,
+              'razorpay_payment_id', $6::text
+            ),
+            now(),
+            now()
+          where not exists (
+            select 1
+            from capture
+            where payment_id = $4::text
+              and deleted_at is null
+          )
+        `,
+        [
+          captureId,
+          payment.amount,
+          payment.raw_amount,
+          payment.id,
+          razorpayOrderId,
+          razorpayPaymentId,
+        ]
+      )
+    }
+
+    await client.query(
+      `
+        update payment_collection
+        set
+          status = 'completed',
+          captured_amount = amount,
+          raw_captured_amount = raw_amount,
+          completed_at = coalesce(completed_at, now()),
+          updated_at = now()
+        where id = $1
+      `,
+      [paymentCollectionId]
+    )
+
+    const orderResult = await client.query(
+      `
+        select o.id as order_id, o.currency_code, o.version
+        from order_payment_collection opc
+        join "order" o on o.id = opc.order_id
+        where opc.payment_collection_id = $1
+          and opc.deleted_at is null
+          and o.deleted_at is null
+        union
+        select o.id as order_id, o.currency_code, o.version
+        from cart_payment_collection cpc
+        join order_cart oc on oc.cart_id = cpc.cart_id and oc.deleted_at is null
+        join "order" o on o.id = oc.order_id
+        where cpc.payment_collection_id = $1
+          and cpc.deleted_at is null
+          and o.deleted_at is null
+        limit 1
+      `,
+      [paymentCollectionId]
+    )
+    const order = orderResult.rows[0]
+
+    if (!order || !payment) {
+      await client.query("commit")
+      return
+    }
+
+    const transactionId = `ordtrx_${crypto
       .createHash("sha1")
-      .update(`${payment.id}:${razorpayPaymentId}`)
+      .update(`${order.order_id}:${captureId || payment.id}`)
       .digest("hex")
       .slice(0, 26)}`
 
     await client.query(
       `
-        insert into capture (
+        insert into order_transaction (
           id,
+          order_id,
+          version,
           amount,
           raw_amount,
-          payment_id,
-          metadata,
+          currency_code,
+          reference,
+          reference_id,
           created_at,
           updated_at
         )
         select
           $1::text,
-          $2::numeric,
-          $3::jsonb,
-          $4::text,
-          jsonb_build_object(
-            'source', 'razorpay_webhook',
-            'razorpay_payment_id', $5::text
-          ),
+          $2::text,
+          $3::integer,
+          $4::numeric,
+          $5::jsonb,
+          $6::text,
+          'capture',
+          $7::text,
           now(),
           now()
         where not exists (
           select 1
-          from capture
-          where payment_id = $4::text
+          from order_transaction
+          where order_id = $2::text
+            and reference = 'capture'
+            and reference_id = $7::text
             and deleted_at is null
         )
       `,
       [
-        captureId,
+        transactionId,
+        order.order_id,
+        Number(order.version || 1),
         payment.amount,
         payment.raw_amount,
-        payment.id,
-        razorpayPaymentId,
+        order.currency_code,
+        captureId || payment.id,
       ]
     )
-  }
 
-  await client.query(
-    `
-      update payment_collection
-      set
-        status = 'completed',
-        captured_amount = amount,
-        raw_captured_amount = raw_amount,
-        completed_at = coalesce(completed_at, now()),
-        updated_at = now()
-      where id = $1
-    `,
-    [paymentCollectionId]
-  )
-
-  const orderResult = await client.query(
-    `
-      select o.id as order_id, o.currency_code, o.version
-      from order_payment_collection opc
-      join "order" o on o.id = opc.order_id
-      where opc.payment_collection_id = $1
-        and opc.deleted_at is null
-        and o.deleted_at is null
-      order by opc.created_at desc
-      limit 1
-    `,
-    [paymentCollectionId]
-  )
-  const order = orderResult.rows[0]
-
-  if (!order || !payment) {
-    return
-  }
-
-  const transactionId = `ordtrx_${crypto
-    .createHash("sha1")
-    .update(`${order.order_id}:${captureId || payment.id}`)
-    .digest("hex")
-    .slice(0, 26)}`
-
-  await client.query(
-    `
-      insert into order_transaction (
-        id,
-        order_id,
-        version,
-        amount,
-        raw_amount,
-        currency_code,
-        reference,
-        reference_id,
-        created_at,
-        updated_at
-      )
-      select
-        $1::text,
-        $2::text,
-        $3::integer,
-        $4::numeric,
-        $5::jsonb,
-        $6::text,
-        'capture',
-        $7::text,
-        now(),
-        now()
-      where not exists (
-        select 1
-        from order_transaction
-        where order_id = $2::text
-          and reference = 'capture'
-          and reference_id = $7::text
+    await client.query(
+      `
+        update order_summary
+        set
+          totals = coalesce(totals, '{}'::jsonb) || jsonb_build_object(
+            'paid_total', $2::numeric,
+            'raw_paid_total', $3::jsonb,
+            'transaction_total', $2::numeric,
+            'raw_transaction_total', $3::jsonb,
+            'pending_difference', 0,
+            'raw_pending_difference', jsonb_build_object('value', '0', 'precision', 20)
+          ),
+          updated_at = now()
+        where order_id = $1
           and deleted_at is null
-      )
-    `,
-    [
-      transactionId,
-      order.order_id,
-      Number(order.version || 1),
-      payment.amount,
-      payment.raw_amount,
-      order.currency_code,
-      captureId || payment.id,
-    ]
-  )
-
-  await client.query(
-    `
-      update order_summary
-      set
-        totals = coalesce(totals, '{}'::jsonb) || jsonb_build_object(
-          'paid_total', $2::numeric,
-          'raw_paid_total', $3::jsonb,
-          'transaction_total', $2::numeric,
-          'raw_transaction_total', $3::jsonb,
-          'pending_difference', 0,
-          'raw_pending_difference', jsonb_build_object('value', '0', 'precision', 20)
-        ),
-        updated_at = now()
-      where order_id = $1
-        and deleted_at is null
-    `,
-    [order.order_id, payment.amount, payment.raw_amount]
-  )
-  await client.query("commit")
+      `,
+      [order.order_id, payment.amount, payment.raw_amount]
+    )
+    await client.query("commit")
   } catch (error) {
     await client.query("rollback").catch(() => undefined)
     throw error
@@ -521,6 +537,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       paymentSessionId: session.payment_session_id,
       paymentCollectionId: session.payment_collection_id,
       razorpayPaymentId,
+      razorpayOrderId,
     })
 
     return res.json({
